@@ -9,5 +9,9 @@ Our goal is to curate a NER dataset for morphologically challenging languages us
 ### how to create a kernel from a pipenv file (for creating 'susamuru' kernel)
 * pipenv install
 * pipenv shell
-* python -m ipykernel install --user --name=my-susamuru
+* python -m ipykernel install --user --name=susamuru
+
 Now you can use our notebooks!
+
+#### in order to remove our kernel from jupyter notebook:
+* jupyter kernelspec uninstall susamuru
