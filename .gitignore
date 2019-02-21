@@ -115,3 +115,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Pywikibot
+apicache-py3/
+throttle.ctrl
+pywikibot.lwp
