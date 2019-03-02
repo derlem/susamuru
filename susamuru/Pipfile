@@ -5,10 +5,12 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
+"flake8" = "*"
 
 [packages]
 pywikibot = "*"
 ipykernel = "*"
+nltk = "*"
 
 [requires]
 python_version = "3.6"
