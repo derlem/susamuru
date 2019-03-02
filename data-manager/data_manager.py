@@ -1,22 +1,20 @@
-from pymongo import MongoClient
+from mongoengine import *
 import collections
 
 DB_NAME = "susamuru"
 PORT = 27017
-client = MongoClient()
 
-client = MongoClient('localhost', PORT)
+connect(db=DB_NAME, host='localhost', port=PORT)
 print("Mongo Client is created!")
 
-db = client[DB_NAME]
-print("Database is created!")
+class Entity(Document):
+    disambiguation_term = StringField(required=True)
+    candidate = StringField(required=True)
+    sentence = StringField(required=True)
 
-disambiguation_terms = db.disambiguation_terms
 
-def add_disambiguation_terms(elements):
-    if not isinstance(elements,collections.Sequence):
-        print("Elements has to be a list of disambiguation terms")
-        return
-    
-    result = disambiguation_terms.insert_many(elements)
-    print('Multiple disambiguation terms are inserted: {0}'.format(result.inserted_ids))
+def add_entity(entity):
+    try:
+        entity.save()
+    except ValidationError:
+        print("Please check the structure of the entity")
