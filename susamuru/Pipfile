@@ -13,6 +13,7 @@ ipykernel = "*"
 nltk = "*"
 mediawiki-parser = "*"
 mwparserfromhell = "*"
+fire = "*"
 
 [requires]
 python_version = "3.6"

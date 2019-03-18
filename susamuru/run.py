@@ -1,3 +1,6 @@
+import fire
 from susamuru import collect
 
-collect(2)
+
+if __name__ == '__main__':
+  fire.Fire(collect)
