@@ -12,12 +12,12 @@ SITE = pywikibot.Site(CODE, FAMILY)
 DISAMBIGUATION = "(anlam ayrımı)"
 
 
-def get_disambiguation_term_generator():
+def get_ambiguous_term_generator():
     return SITE.disambcategory().articles()
 
 
-def get_disambiguation_terms(limit=None):
-    generator = get_disambiguation_term_generator()
+def get_ambiguous_terms(limit=None):
+    generator = get_ambiguous_term_generator()
     pages = []
     for page in generator:
         pages.append(page)
@@ -27,7 +27,7 @@ def get_disambiguation_terms(limit=None):
 
 
 def get_candidates(disamb_page):
-    """Candidate is a page that its title includes the disabiguation term.
+    """Candidate is a page that its title includes the ambiguous term.
     This function looks for candidates in disamb_page.linkedPages().
 
     Arguments:
@@ -38,7 +38,7 @@ def get_candidates(disamb_page):
     """
 
     # Filter out the disambiguation string i.e (anlam ayrımı) from title.
-    title = utils.strip_disambiguation_term(disamb_page.title(),
+    title = utils.strip_ambiguous_term(disamb_page.title(),
                                             DISAMBIGUATION)
 
     candidates = []
@@ -53,10 +53,10 @@ def get_candidates(disamb_page):
 
 
 def get_disambiguation_map(limit=None):
-    terms = get_disambiguation_terms(limit)
+    terms = get_ambiguous_terms(limit)
     disambiguation_map = {}
     for term in terms:
-        term_title = utils.strip_disambiguation_term(term.title(),
+        term_title = utils.strip_ambiguous_term(term.title(),
                                                      DISAMBIGUATION)
         disambiguation_map[term_title] = get_candidates(term)
     return disambiguation_map
@@ -91,5 +91,5 @@ def collect(limit=None):
 # map = get_disambiguation_map()
 # end = datetime.now()
 # end - begin
-# terms = get_disambiguation_terms(5)
+# terms = get_ambiguous_terms(5)
 # get_candidates(terms[0])
