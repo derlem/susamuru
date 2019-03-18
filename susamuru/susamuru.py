@@ -1,5 +1,6 @@
 import pywikibot
 import re
+import nltk
 from . import utils
 
 print("You should set CODE accordingly default is 'tr' for Turkish")
@@ -21,7 +22,7 @@ def get_ambiguous_terms(limit=None):
     pages = []
     for page in generator:
         pages.append(page)
-        # break  # DEBUG for test purposes
+        #break  # DEBUG for test purposes
         if limit is not None and len(pages) > limit: break  # DEBUG
     return pages
 
@@ -64,13 +65,16 @@ def get_disambiguation_map(limit=None):
 
 def extract_sentences_from_referenced_pages(page):  # incomplete
     refs = list(page.getReferences(namespaces=FAMILY))
-    sentences = []
     # TODO: for now gets just title of the page. it does not work
     # TODO: it should be improved, probably with 'nltk'
-    title = page.title()
+    sentences = []
     for ref in refs:
         if not ref.isDisambig():
-            sentences.append(ref.title())
+            page_text = ref.text()
+            page_sentences = nltk.sent_tokenize(page_text)
+            sentences.append(page_sentences)
+    
+    print(sentences)
     return sentences
 
 
@@ -85,6 +89,7 @@ def collect(limit=None):
             entities.append(entity)
     return entities
 
+# collect(limit=2)
 # from susamuru.susamuru import *
 # from datetime import datetime
 # begin = datetime.now()
