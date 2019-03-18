@@ -1,12 +1,14 @@
-import pywikibot
-import os
-import re
-from . import utils 
-import mwparserfromhell
-import pprint
 import json
+import os
+import pprint
+import re
 
+import mwparserfromhell
 import nltk
+import pywikibot
+
+from . import utils
+
 nltk.download('punkt')
 
 print("You should set CODE accordingly default is 'tr' for Turkish")
