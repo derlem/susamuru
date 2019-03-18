@@ -98,6 +98,9 @@ def collect(limit=None, directory="./dataset"):
         os.mkdir(directory)
 
     disamb_map = get_disambiguation_map(limit)
+    disamb_term_number = 0
+    candidate_number = 0
+    sentence_number = 0
     for disamb_term, candidates in disamb_map.items():
 
         # Create letter directory
@@ -112,13 +115,9 @@ def collect(limit=None, directory="./dataset"):
         if not os.path.isdir(ambiguous_term_directory):
             print(disamb_term)
             os.mkdir(ambiguous_term_directory)
+            disamb_term_number += 1
 
-        stat_file = open(ambiguous_term_directory + "/statistics.json", "w")
-        stat_json = json.dumps(candidates["statistics"])
-        stat_file.write(stat_json)
-        stat_file.flush()
-        stat_file.close()
-
+        disamb_term_sentence_number = 0
         for candidate in candidates["candidates"]:
             entities = []
             class_path = extract_class_path(candidate)  # TODO: Should its NER TAG using wikidata
@@ -126,7 +125,7 @@ def collect(limit=None, directory="./dataset"):
         
             # Create candidate file
             candidate_file_name = ambiguous_term_directory + "/'" + candidate.title() + "'.json"
-            candidate_file = open(candidate_file_name, "a")
+            candidate_file = open(candidate_file_name, "w")
 
 
             # Here get the important sentences and create the entity
@@ -146,10 +145,24 @@ def collect(limit=None, directory="./dataset"):
             for useful_sentence in useful_sentences:
                 entity = [disamb_term, candidate.title(), useful_sentence, class_path]
                 entities.append(entity)
-            
+
+            disamb_term_sentence_number += len(useful_sentences)
             json.dump(entities, candidate_file) 
             candidate_file.flush()
             candidate_file.close()
+            candidate_number += 1
+        
+        with open(ambiguous_term_directory + "/statistics.json", "w") as f:
+            candidates["statistics"]["sentences_number"] = disamb_term_sentence_number
+            json.dump(candidates["statistics"], f)
+            print("hebele")
+            sentence_number += disamb_term_sentence_number
+
+    with open(directory + "/statistics.json", "w") as f:
+        stat_dict = {"disamb_term_number": disamb_term_number,
+                    "candidate_number": candidate_number,
+                    "sentence_number": sentence_number}
+        json.dump(stat_dict, f)
 
 
 def extract_class_path(page):
