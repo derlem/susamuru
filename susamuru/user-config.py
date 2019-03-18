@@ -1,0 +1,2 @@
+mylang = "tr"
+family = "wikipedia"

@@ -1,7 +1,7 @@
 import pywikibot
 import re
 import nltk
-from . import utils
+import utils 
 
 print("You should set CODE accordingly default is 'tr' for Turkish")
 print("You should set FAMILY accordingly default is 'wikipedia' for wikipedia")
