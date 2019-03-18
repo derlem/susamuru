@@ -16,6 +16,25 @@ SITE = pywikibot.Site(CODE, FAMILY)
 DISAMBIGUATION = "(anlam ayrımı)"
 
 
+'''
+Templates and Config for mediawiki-parser 
+'''
+templates = {}
+
+from mediawiki_parser.preprocessor import make_parser
+preprocessor = make_parser(templates)
+
+from mediawiki_parser.text import make_parser
+parser = make_parser()
+
+def parse_wiki_text(wiki_text):
+    preprocessed_text = preprocessor.parse(wiki_text)
+    print("Type of preprocessed text: ", type(preprocessed_text))
+    
+    output = parser.parse(preprocessed_text.leaves())
+    print("Type of output: ", type(output))
+    return output
+
 def get_ambiguous_term_generator():
     return SITE.disambcategory().articles()
 
@@ -52,7 +71,6 @@ def get_candidates(disamb_page):
             # if link's title includes the disambiguation page's title then
             # then we include this to the candidates.
             candidates.append(page)
-
     return candidates
 
 
@@ -74,8 +92,10 @@ def extract_sentences_from_referenced_pages(page):  # incomplete
     for ref in refs:
         if not ref.isDisambig():
             page_text = ref.text
-            page_sentences = nltk.sent_tokenize(page_text)
-            print("Page sentences: ", page_sentences)
+            parsed_page_text = parse_wiki_text(page_text)
+
+            page_sentences = nltk.sent_tokenize(parsed_page_text)
+            #print("Page sentences: ", page_sentences)
             sentences.append(page_sentences)
     return sentences
 

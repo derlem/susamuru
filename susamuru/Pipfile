@@ -11,6 +11,7 @@ pylint = "*"
 pywikibot = "*"
 ipykernel = "*"
 nltk = "*"
+mediawiki-parser = "*"
 
 [requires]
 python_version = "3.6"
