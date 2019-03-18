@@ -12,6 +12,7 @@ pywikibot = "*"
 ipykernel = "*"
 nltk = "*"
 mediawiki-parser = "*"
+mwparserfromhell = "*"
 
 [requires]
 python_version = "3.6"

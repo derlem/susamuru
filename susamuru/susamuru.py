@@ -1,7 +1,8 @@
 import pywikibot
 import re
 import utils 
-
+import mwparserfromhell
+import pprint
 
 import nltk
 nltk.download('punkt')
@@ -17,29 +18,12 @@ DISAMBIGUATION = "(anlam ayrımı)"
 INSTANCE_OF_PROPERTY_CODE = "P31"
 SUBCLASS_PROPERTY_CODE = "P279"
 
-
-'''
-Templates and Config for mediawiki-parser 
-'''
-templates = {}
-
-from mediawiki_parser.preprocessor import make_parser
-preprocessor = make_parser(templates)
-
-from mediawiki_parser.text import make_parser
-parser = make_parser()
-
-def parse_wiki_text(wiki_text):
-    preprocessed_text = preprocessor.parse(wiki_text)
-    print("Type of preprocessed text: ", type(preprocessed_text))
-    
-    output = parser.parse(preprocessed_text.leaves())
-    print("Type of output: ", type(output))
-    return output
+def get_salt_text(wiki_text):
+    wikicode = mwparserfromhell.parse(wiki_text)
+    return wikicode.strip_code()
 
 def get_ambiguous_term_generator():
     return SITE.disambcategory().articles()
-
 
 def get_ambiguous_terms(limit=None):
     generator = get_ambiguous_term_generator()
@@ -88,30 +72,46 @@ def get_disambiguation_map(limit=None):
 
 def extract_sentences_from_referenced_pages(page):  # incomplete
     refs = list(page.getReferences(namespaces=FAMILY))
-    # TODO: for now gets just title of the page. it does not work
-    # TODO: it should be improved, probably with 'nltk'
     sentences = []
     for ref in refs:
         if not ref.isDisambig():
             page_text = ref.text
-            parsed_page_text = parse_wiki_text(page_text)
-
-            page_sentences = nltk.sent_tokenize(parsed_page_text)
-            #print("Page sentences: ", page_sentences)
+            page_sentences = nltk.sent_tokenize(page_text)
+            
             sentences.append(page_sentences)
-    return sentences
+    
+    flat_sentences_list = [item for sublist in sentences for item in sublist]
+    return flat_sentences_list
 
 
 def collect(limit=None):
     disamb_map = get_disambiguation_map(limit)
     entities = []
-    #print("Map", disamb_map)
     for disamb_term, candidates in disamb_map.items():
         for candidate in candidates:
             class_path = extract_class_path(candidate)  # TODO: Should its NER TAG using wikidata
-            sentences = extract_sentences_from_referenced_pages(candidate)
-            entity = [disamb_term, candidate.title(), sentences, class_path]
-            entities.append(entity)
+            page_sentences = extract_sentences_from_referenced_pages(candidate)
+            
+            # Here get the important sentences and create the entity
+            # Use the candidate title to get the sentence
+            # search_item = "Beşiktaş (kadın basketbol takımı)"
+            search_item = candidate.title()
+            useful_sentences = []
+
+            for sentence in page_sentences:
+                wikicode = mwparserfromhell.parse(sentence)
+                links_in_sentence = wikicode.filter_wikilinks()
+                for link in links_in_sentence:
+                    if search_item in link:
+                        # print("Found one sentence for candidate: ", candidate.title(), " Sentence: ", wikicode.strip_code())
+                        useful_sentences.append(wikicode.strip_code())
+
+            for useful_sentence in useful_sentences:
+                entity = [disamb_term, candidate.title(), useful_sentence, class_path]
+                entities.append(entity)
+
+    print("**********************************")
+    pprint.pprint(entities)
     return entities
 
 def extract_class_path(page):
@@ -136,7 +136,7 @@ def extract_class_path(page):
         class_path.append(curr_page.text["labels"]["en"])
     return class_path
 
-collect(limit=2)
+collect(limit=5)
 # from susamuru.susamuru import *
 # from datetime import datetime
 # begin = datetime.now()
