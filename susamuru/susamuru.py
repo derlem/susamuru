@@ -14,6 +14,8 @@ CODE = "tr"
 FAMILY = "wikipedia"
 SITE = pywikibot.Site(CODE, FAMILY)
 DISAMBIGUATION = "(anlam ayrımı)"
+INSTANCE_OF_PROPERTY_CODE = "P31"
+SUBCLASS_PROPERTY_CODE = "P279"
 
 
 def get_ambiguous_term_generator():
@@ -86,13 +88,35 @@ def collect(limit=None):
     #print("Map", disamb_map)
     for disamb_term, candidates in disamb_map.items():
         for candidate in candidates:
-            tag = 0  # TODO: Should its NER TAG using wikidata
+            class_path = extract_class_path(candidate)  # TODO: Should its NER TAG using wikidata
             sentences = extract_sentences_from_referenced_pages(candidate)
-            entity = [disamb_term, candidate.title(), sentences, tag]
+            entity = [disamb_term, candidate.title(), sentences, class_path]
             entities.append(entity)
     return entities
 
-collect(limit=4)
+def extract_class_path(page):
+    try:
+        wd_page = pywikibot.ItemPage.fromPage(page)
+    except pywikibot.exceptions.NoPage:
+        # This means wikidata page does not exists for this wikipedia page
+        return None
+    curr_page = wd_page
+    claims = curr_page.text["claims"]
+    class_path = []
+    # Find instance of if exists else just continue with subclasses
+    if INSTANCE_OF_PROPERTY_CODE in claims:
+        claim = claims[INSTANCE_OF_PROPERTY_CODE][0]
+        curr_page = claim.target
+        class_path.append(curr_page.text["labels"]["en"])
+        claims = curr_page.text["claims"]
+    while SUBCLASS_PROPERTY_CODE in claims:
+        claim = claims[SUBCLASS_PROPERTY_CODE][0]
+        curr_page = claim.target
+        claims = curr_page.text["claims"]
+        class_path.append(curr_page.text["labels"]["en"])
+    return class_path
+
+collect(limit=2)
 # from susamuru.susamuru import *
 # from datetime import datetime
 # begin = datetime.now()
