@@ -1,7 +1,10 @@
 import pywikibot
 import re
-import nltk
 import utils 
+
+
+import nltk
+nltk.download('punkt')
 
 print("You should set CODE accordingly default is 'tr' for Turkish")
 print("You should set FAMILY accordingly default is 'wikipedia' for wikipedia")
@@ -70,17 +73,17 @@ def extract_sentences_from_referenced_pages(page):  # incomplete
     sentences = []
     for ref in refs:
         if not ref.isDisambig():
-            page_text = ref.text()
+            page_text = ref.text
             page_sentences = nltk.sent_tokenize(page_text)
+            print("Page sentences: ", page_sentences)
             sentences.append(page_sentences)
-    
-    print(sentences)
     return sentences
 
 
 def collect(limit=None):
     disamb_map = get_disambiguation_map(limit)
     entities = []
+    #print("Map", disamb_map)
     for disamb_term, candidates in disamb_map.items():
         for candidate in candidates:
             tag = 0  # TODO: Should its NER TAG using wikidata
@@ -89,7 +92,7 @@ def collect(limit=None):
             entities.append(entity)
     return entities
 
-# collect(limit=2)
+collect(limit=4)
 # from susamuru.susamuru import *
 # from datetime import datetime
 # begin = datetime.now()
