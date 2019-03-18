@@ -1,8 +1,10 @@
 import pywikibot
+import os
 import re
-import utils 
+from . import utils 
 import mwparserfromhell
 import pprint
+import json
 
 import nltk
 nltk.download('punkt')
@@ -43,7 +45,7 @@ def get_candidates(disamb_page):
         disamb_page {pywikibot.Page()} -- a disambiguation page
 
     Returns:
-        list -- list of pywikikbot.Page() that are candidates
+        dict -- list of pywikikbot.Page() that are candidates and statistics.
     """
 
     # Filter out the disambiguation string i.e (anlam ayrımı) from title.
@@ -52,12 +54,19 @@ def get_candidates(disamb_page):
 
     candidates = []
     # Traverse all links in the disambiguation page
+    all_pages_number = 0
+    candidate_pages_number = 0
     for page in disamb_page.linkedPages():
+        all_pages_number += 1
         if title in page.title().lower():
             # if link's title includes the disambiguation page's title then
             # then we include this to the candidates.
+            candidate_pages_number += 1
             candidates.append(page)
-    return candidates
+    returned_dict = {"candidates": candidates,
+                     "statistics": {"all_pages": all_pages_number,
+                                    "candidate_pages": candidate_pages_number}}
+    return returned_dict
 
 
 def get_disambiguation_map(limit=None):
@@ -84,14 +93,42 @@ def extract_sentences_from_referenced_pages(page):  # incomplete
     return flat_sentences_list
 
 
-def collect(limit=None):
+def collect(limit=None, directory="./dataset"):
+    if not os.path.isdir(directory):
+        os.mkdir(directory)
+
     disamb_map = get_disambiguation_map(limit)
-    entities = []
     for disamb_term, candidates in disamb_map.items():
-        for candidate in candidates:
+
+        # Create letter directory
+        first_letter = disamb_term[0]
+        letter_directory = directory + "/'" + first_letter + "'"
+        if not os.path.isdir(letter_directory):
+            print(first_letter)
+            os.mkdir(letter_directory) 
+
+        # Create ambigous term directory
+        ambiguous_term_directory = letter_directory + "/'" + disamb_term + "'"
+        if not os.path.isdir(ambiguous_term_directory):
+            print(disamb_term)
+            os.mkdir(ambiguous_term_directory)
+
+        stat_file = open(ambiguous_term_directory + "/statistics.json", "w")
+        stat_json = json.dumps(candidates["statistics"])
+        stat_file.write(stat_json)
+        stat_file.flush()
+        stat_file.close()
+
+        for candidate in candidates["candidates"]:
+            entities = []
             class_path = extract_class_path(candidate)  # TODO: Should its NER TAG using wikidata
             page_sentences = extract_sentences_from_referenced_pages(candidate)
-            
+        
+            # Create candidate file
+            candidate_file_name = ambiguous_term_directory + "/'" + candidate.title() + "'.json"
+            candidate_file = open(candidate_file_name, "a")
+
+
             # Here get the important sentences and create the entity
             # Use the candidate title to get the sentence
             # search_item = "Beşiktaş (kadın basketbol takımı)"
@@ -104,15 +141,16 @@ def collect(limit=None):
                 for link in links_in_sentence:
                     if search_item in link:
                         # print("Found one sentence for candidate: ", candidate.title(), " Sentence: ", wikicode.strip_code())
-                        useful_sentences.append(wikicode.strip_code())
-
+                        useful_sentences.append(wikicode.strip_code())          
+            
             for useful_sentence in useful_sentences:
                 entity = [disamb_term, candidate.title(), useful_sentence, class_path]
                 entities.append(entity)
+            
+            json.dump(entities, candidate_file) 
+            candidate_file.flush()
+            candidate_file.close()
 
-    print("**********************************")
-    pprint.pprint(entities)
-    return entities
 
 def extract_class_path(page):
     try:
@@ -127,16 +165,23 @@ def extract_class_path(page):
     if INSTANCE_OF_PROPERTY_CODE in claims:
         claim = claims[INSTANCE_OF_PROPERTY_CODE][0]
         curr_page = claim.target
-        class_path.append(curr_page.text["labels"]["en"])
-        claims = curr_page.text["claims"]
+        if "labels" in curr_page.text and "en" in curr_page.text["labels"]:
+            class_path.append(curr_page.text["labels"]["en"])
+        if "claims" in curr_page.text:
+            claims = curr_page.text["claims"]
+        else:
+            return class_path
     while SUBCLASS_PROPERTY_CODE in claims:
         claim = claims[SUBCLASS_PROPERTY_CODE][0]
         curr_page = claim.target
-        claims = curr_page.text["claims"]
-        class_path.append(curr_page.text["labels"]["en"])
+        if "claims" in curr_page.text:
+            claims = curr_page.text["claims"]
+        else:
+            break
+        if "labels" in curr_page.text and "en" in curr_page.text["labels"]:
+            class_path.append(curr_page.text["labels"]["en"])
     return class_path
 
-collect(limit=5)
 # from susamuru.susamuru import *
 # from datetime import datetime
 # begin = datetime.now()
