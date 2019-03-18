@@ -7,7 +7,7 @@ import mwparserfromhell
 import nltk
 import pywikibot
 
-from . import utils
+import utils
 
 nltk.download('punkt')
 
@@ -157,7 +157,6 @@ def collect(limit=None, directory="./dataset"):
         with open(ambiguous_term_directory + "/statistics.json", "w") as f:
             candidates["statistics"]["sentences_number"] = disamb_term_sentence_number
             json.dump(candidates["statistics"], f)
-            print("hebele")
             sentence_number += disamb_term_sentence_number
 
     with open(directory + "/statistics.json", "w") as f:
