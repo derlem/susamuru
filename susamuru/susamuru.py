@@ -2,6 +2,7 @@ import json
 import os
 import pprint
 import re
+import csv
 
 import mwparserfromhell
 import nltk
@@ -105,19 +106,20 @@ def collect(limit=None, directory="./dataset"):
     sentence_number = 0
     for disamb_term, candidates in disamb_map.items():
 
-        # Create letter directory
-        first_letter = disamb_term[0]
-        letter_directory = directory + "/'" + first_letter + "'"
-        if not os.path.isdir(letter_directory):
-            print(first_letter)
-            os.mkdir(letter_directory) 
-
+        disamb_term_dir_name = "".join(x for x in disamb_term if x.isalnum())
         # Create ambigous term directory
-        ambiguous_term_directory = letter_directory + "/'" + disamb_term + "'"
-        if not os.path.isdir(ambiguous_term_directory):
-            print(disamb_term)
-            os.mkdir(ambiguous_term_directory)
-            disamb_term_number += 1
+        ambiguous_term_directory = directory + "/" + disamb_term_dir_name
+        if not disamb_term_dir_name:  # empty file name
+            ambiguous_term_directory = directory + "/" + "illegal_ambiguous_term_name"
+
+        i = 1  # for preventing duplicate dir names
+        while os.path.isdir(ambiguous_term_directory):
+            ambiguous_term_directory = ambiguous_term_directory + "_" + str(i)
+            i += 1
+
+        print(disamb_term)
+        os.mkdir(ambiguous_term_directory)
+        disamb_term_number += 1
 
         disamb_term_sentence_number = 0
         for candidate in candidates["candidates"]:
@@ -125,11 +127,18 @@ def collect(limit=None, directory="./dataset"):
             class_path = extract_class_path(candidate)  # TODO: Should its NER TAG using wikidata
             page_sentences = extract_sentences_from_referenced_pages(candidate)
         
+
+            candidate_file_name = "".join(x for x in candidate.title() if x.isalnum())
             # Create candidate file
-            candidate_file_name = ambiguous_term_directory + "/'" + candidate.title() + "'.json"
-            candidate_file = open(candidate_file_name, "w")
 
+            
+            candidate_file_path = ambiguous_term_directory + "/" + candidate_file_name + ".csv"
+            i = 1  # for preventing duplicate filenames
+            while os.path.isfile(candidate_file_path):
+                candidate_file_path = ambiguous_term_directory + "/" + candidate_file_name + "_" + str(i) + ".csv"
+                i += 1
 
+            print(candidate_file_path)
             # Here get the important sentences and create the entity
             # Use the candidate title to get the sentence
             # search_item = "Beşiktaş (kadın basketbol takımı)"
@@ -148,18 +157,21 @@ def collect(limit=None, directory="./dataset"):
                 entity = [disamb_term, candidate.title(), useful_sentence, class_path]
                 entities.append(entity)
 
+            with open(candidate_file_path, 'a',  newline='') as candidate_file:
+                wr = csv.writer(candidate_file, quoting=csv.QUOTE_ALL, lineterminator='\n')
+                wr.writerows(entities)
+    
             disamb_term_sentence_number += len(useful_sentences)
-            json.dump(entities, candidate_file) 
-            candidate_file.flush()
-            candidate_file.close()
             candidate_number += 1
         
-        with open(ambiguous_term_directory + "/statistics.json", "w") as f:
+        with open(ambiguous_term_directory + "/statistics.json", "a") as f:
             candidates["statistics"]["sentences_number"] = disamb_term_sentence_number
+            candidates["statistics"]["ambiguous_term"] = disamb_term
+
             json.dump(candidates["statistics"], f)
             sentence_number += disamb_term_sentence_number
 
-    with open(directory + "/statistics.json", "w") as f:
+    with open(directory + "/statistics.json", "a") as f:
         stat_dict = {"disamb_term_number": disamb_term_number,
                     "candidate_number": candidate_number,
                     "sentence_number": sentence_number}
