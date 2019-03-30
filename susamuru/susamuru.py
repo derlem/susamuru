@@ -25,6 +25,7 @@ SUBCLASS_PROPERTY_CODE = "P279"
 
 # All Ambiguous Terms and their all disambiguation term candidates are found in this file
 AT_DTCS_FILENAME = "./dataset/at_dtcs.csv"  
+AT_VALID_DTCS_FILENAME = "./dataset/at_valid_dtcs.csv"
 
 def get_salt_text(wiki_text):
     wikicode = mwparserfromhell.parse(wiki_text)
@@ -240,12 +241,17 @@ def at_dtcs(limit=None):
         return at_dtcs_map
 
 def get_valid_candidates(ambiguation_term_title,candidates):
-    valid_candidates = [c if ambiguation_term_title in c.title().lower() for c in candidates]
+    valid_candidates = []
+    for c in candidates:
+        if ambiguation_term_title in c.title().lower():
+            valid_candidates.append(c)
     return valid_candidates
 
 def at_valid_dtcs(at_dtcs_map,limit=None):
-    with open(AT_DTCS_FILENAME, mode='w') as at_dtcs_file:
+    with open(AT_VALID_DTCS_FILENAME, mode='w') as at_dtcs_file:
         writer = csv.writer(at_dtcs_file, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        
+        at_valid_dtcs_map = {}
         
         for ambiguation_term,candidates in at_dtcs_map.items():
             ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), DISAMBIGUATION_REFERENCE)
@@ -259,5 +265,5 @@ def at_valid_dtcs(at_dtcs_map,limit=None):
             writer.writerow(row_items)
             at_valid_dtcs_map[ambiguation_term] = valid_candidates
         return at_valid_dtcs_map
-at_dtcs_map = at_dtcs()
-at_valid_dtcs_map = at_valid_dtcs(at_dtcs_map)
+at_dtcs_map = at_dtcs(limit=10)
+at_valid_dtcs_map = at_valid_dtcs(at_dtcs_map,limit=10)
