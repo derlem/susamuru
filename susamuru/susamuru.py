@@ -23,6 +23,9 @@ DISAMBIGUATION = "(anlam ayrımı)"
 INSTANCE_OF_PROPERTY_CODE = "P31"
 SUBCLASS_PROPERTY_CODE = "P279"
 
+# All Ambiguous Terms and their all disambiguation term candidates are found in this file
+AT_DTCS_FILENAME = "at_dtcs"  
+
 def get_salt_text(wiki_text):
     wikicode = mwparserfromhell.parse(wiki_text)
     return wikicode.strip_code()
@@ -207,6 +210,29 @@ def extract_class_path(page):
         if "labels" in curr_page.text and "en" in curr_page.text["labels"]:
             class_path.append(curr_page.text["labels"]["en"])
     return class_path
+
+'''
+    Methods that we used to collect the data step by step.
+    
+    1st Step: at_dtcs 
+    --------------
+    Get all the ambiguous terms from disambiguation page
+    Get all the links in those pages. Put them in rows in the following format:
+    ambiguation_term,link1,link2,link3
+    Beşiktaş,Beşiktaş Semti,Beşiktaş Futbol Takımı etc.
+    Write all to a file.
+    ---------------
+
+    2nd Step: 
+'''
+def at_dtcs(limit):
+    # Get every ambiguation term.
+    ambiguous_terms = get_ambiguous_terms(limit)
+    print(ambiguous_terms)
+    with open(AT_DTCS_FILENAME, mode='w') as at_dtcs_file:
+        writer = csv.writer(at_dtcs_file, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+at_dtcs(3)
 
 # from susamuru.susamuru import *
 # from datetime import datetime
