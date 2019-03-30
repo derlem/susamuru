@@ -19,12 +19,12 @@ print()
 CODE = "tr"
 FAMILY = "wikipedia"
 SITE = pywikibot.Site(CODE, FAMILY)
-DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
+DISAMBIGUATION = "(anlam ayrımı)"
 INSTANCE_OF_PROPERTY_CODE = "P31"
 SUBCLASS_PROPERTY_CODE = "P279"
 
 # All Ambiguous Terms and their all disambiguation term candidates are found in this file
-AT_DTCS_FILENAME = "./dataset/at_dtcs.csv"  
+AT_DTCS_FILENAME = "at_dtcs"  
 
 def get_salt_text(wiki_text):
     wikicode = mwparserfromhell.parse(wiki_text)
@@ -43,21 +43,37 @@ def get_ambiguous_terms(limit=None):
     return pages
 
 
-def get_disamb_term_candidates(disamb_page):
-    """
-    Candidate is a page that its title includes the ambiguous term.
+def get_candidates(disamb_page):
+    """Candidate is a page that its title includes the ambiguous term.
     This function looks for candidates in disamb_page.linkedPages().
 
     Arguments:
         disamb_page {pywikibot.Page()} -- a disambiguation page
 
     Returns:
-        list -- list of pywikikbot.Page() candidates list for a given page.
+        dict -- list of pywikikbot.Page() that are candidates and statistics.
     """
 
+    # Filter out the disambiguation string i.e (anlam ayrımı) from title.
+    title = utils.strip_ambiguous_term(disamb_page.title(),
+                                            DISAMBIGUATION)
+
+    candidates = []
+    
     # Traverse all links in the disambiguation page
-    candidates = [disamb_candidate for disamb_candidate in disamb_page.linkedPages()]
-    return candidates
+    all_pages_number = 0
+    candidate_pages_number = 0
+    for page in disamb_page.linkedPages():
+        all_pages_number += 1
+        if title in page.title().lower():
+            # if link's title includes the disambiguation page's title then
+            # then we include this to the candidates.
+            candidate_pages_number += 1
+            candidates.append(page)
+    returned_dict = {"candidates": candidates,
+                     "statistics": {"all_pages": all_pages_number,
+                                    "candidate_pages": candidate_pages_number}}
+    return returned_dict
 
 
 def get_disambiguation_map(limit=None):
@@ -208,56 +224,22 @@ def extract_class_path(page):
     Write all to a file.
     ---------------
 
-    2nd Step: at_valid_dcts
-    ---------------
-    Filters the candidates. Candidates that includes the ambiguous 
-    term is accepted as a valid candidate. Others are discarded.
-    Uses the map that is created with method at_dcts.
-
+    2nd Step: 
 '''
-def at_dtcs(limit=None):
+def at_dtcs(limit):
     # Get every ambiguation term.
     ambiguous_terms = get_ambiguous_terms(limit)
-
-    at_dtcs_map = {}
-
+    print(ambiguous_terms)
     with open(AT_DTCS_FILENAME, mode='w') as at_dtcs_file:
         writer = csv.writer(at_dtcs_file, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        
-        for ambiguation_term in ambiguous_terms:
-            candidates = [disamb_candidate for disamb_candidate in ambiguation_term.linkedPages()]
-            disamb_candidate_titles = [candidate.title() for candidate in candidates]
-            
-            # Strip "anlam ayrımı" from ambiguation page title.
-            ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), DISAMBIGUATION_REFERENCE)
 
-            # Items that are going to be printed.
-            row_items = []
-            row_items = disamb_candidate_titles
-            row_items.insert(0, ambiguation_term_title)
-            writer.writerow(row_items)
-            at_dtcs_map[ambiguation_term] = candidates
-        return at_dtcs_map
+at_dtcs(3)
 
-def get_valid_candidates(ambiguation_term_title,candidates):
-    valid_candidates = [c if ambiguation_term_title in c.title().lower() for c in candidates]
-    return valid_candidates
-
-def at_valid_dtcs(at_dtcs_map,limit=None):
-    with open(AT_DTCS_FILENAME, mode='w') as at_dtcs_file:
-        writer = csv.writer(at_dtcs_file, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        
-        for ambiguation_term,candidates in at_dtcs_map.items():
-            ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), DISAMBIGUATION_REFERENCE)
-            valid_candidates = get_valid_candidates(ambiguation_term_title,candidates)
-            valid_candidate_titles = [vc.title() for vc in valid_candidates]
-
-            # Items that are going to be printed.
-            row_items = []
-            row_items = valid_candidate_titles
-            row_items.insert(0, ambiguation_term_title)
-            writer.writerow(row_items)
-            at_valid_dtcs_map[ambiguation_term] = valid_candidates
-        return at_valid_dtcs_map
-at_dtcs_map = at_dtcs()
-at_valid_dtcs_map = at_valid_dtcs(at_dtcs_map)
+# from susamuru.susamuru import *
+# from datetime import datetime
+# begin = datetime.now()
+# map = get_disambiguation_map()
+# end = datetime.now()
+# end - begin
+# terms = get_ambiguous_terms(5)
+# get_candidates(terms[0])
