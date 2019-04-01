@@ -12,6 +12,8 @@ import utils
 
 nltk.download('punkt')
 
+LIMIT = 50
+
 print("You should set CODE accordingly default is 'tr' for Turkish")
 print("You should set FAMILY accordingly default is 'wikipedia' for wikipedia")
 print("You should set DISAMBIGUATION accordingly default is '(anlam ayrımı)'")
@@ -22,10 +24,13 @@ SITE = pywikibot.Site(CODE, FAMILY)
 DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
 INSTANCE_OF_PROPERTY_CODE = "P31"
 SUBCLASS_PROPERTY_CODE = "P279"
+DELIMITER = ","
+QUOTE_CHAR = '"'
 
 # All Ambiguous Terms and their all disambiguation term candidates are found in this file
 AT_DTCS_FILENAME = "./dataset/at_dtcs.csv"  
-AT_VALID_DTCS_FILENAME = "./dataset/at_valid_dtcs.csv"
+AT_VDTS_FILENAME = "./dataset/at_vdts.csv"
+AT_VDT_ETH_FILENAME = "./dataset/at_vdt_eth.csv"
 
 def get_salt_text(wiki_text):
     wikicode = mwparserfromhell.parse(wiki_text)
@@ -53,7 +58,7 @@ def get_disamb_term_candidates(disamb_page):
         disamb_page {pywikibot.Page()} -- a disambiguation page
 
     Returns:
-        list -- list of pywikikbot.Page() candidates list for a given page.
+        list -- list of pywikibot.Page() candidates list for a given page.
     """
 
     # Traverse all links in the disambiguation page
@@ -197,6 +202,7 @@ def extract_class_path(page):
             class_path.append(curr_page.text["labels"]["en"])
     return class_path
 
+# =========================================================================== 
 '''
     Methods that we used to collect the data step by step.
     
@@ -209,21 +215,19 @@ def extract_class_path(page):
     Write all to a file.
     ---------------
 
-    2nd Step: at_valid_dcts
+    2nd Step: at_vdts
     ---------------
     Filters the candidates. Candidates that includes the ambiguous 
-    term is accepted as a valid candidate. Others are discarded.
-    Uses the map that is created with method at_dcts.
+    term is accepted as a valid disambiguation term. Others are discarded.
+    Uses the map that is created with the 1st method's creation .
 
 '''
 def at_dtcs(limit=None):
     # Get every ambiguation term.
     ambiguous_terms = get_ambiguous_terms(limit)
 
-    at_dtcs_map = {}
-
     with open(AT_DTCS_FILENAME, mode='w') as at_dtcs_file:
-        writer = csv.writer(at_dtcs_file, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(at_dtcs_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
         
         for ambiguation_term in ambiguous_terms:
             candidates = [disamb_candidate for disamb_candidate in ambiguation_term.linkedPages()]
@@ -237,8 +241,18 @@ def at_dtcs(limit=None):
             row_items = disamb_candidate_titles
             row_items.insert(0, ambiguation_term_title)
             writer.writerow(row_items)
-            at_dtcs_map[ambiguation_term] = candidates
-        return at_dtcs_map
+
+# This method constructs the at_dtcs map from the at_dtcs.csv file.
+def construct_at_dt_map_from_file(filename):
+    at_dt_map = {}
+    with open(filename, newline='') as csvfile:
+        reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
+        for row in reader:
+            
+            # Put the pages into the map.
+            pages = [pywikibot.Page(SITE,page_name) for page_name in row[1:]]
+            at_dt_map[row[0]] = pages
+        return at_dt_map
 
 def get_valid_candidates(ambiguation_term_title,candidates):
     valid_candidates = []
@@ -247,12 +261,12 @@ def get_valid_candidates(ambiguation_term_title,candidates):
             valid_candidates.append(c)
     return valid_candidates
 
-def at_valid_dtcs(at_dtcs_map,limit=None):
-    with open(AT_VALID_DTCS_FILENAME, mode='w') as at_dtcs_file:
-        writer = csv.writer(at_dtcs_file, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        
-        at_valid_dtcs_map = {}
-        
+def at_vdts(limit=None):
+    at_dtcs_map = construct_at_dt_map_from_file(AT_DTCS_FILENAME)
+
+    with open(AT_VDTS_FILENAME, mode='w') as at_vdts_file:
+        writer = csv.writer(at_vdts_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
+
         for ambiguation_term,candidates in at_dtcs_map.items():
             ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), DISAMBIGUATION_REFERENCE)
             valid_candidates = get_valid_candidates(ambiguation_term_title,candidates)
@@ -263,7 +277,33 @@ def at_valid_dtcs(at_dtcs_map,limit=None):
             row_items = valid_candidate_titles
             row_items.insert(0, ambiguation_term_title)
             writer.writerow(row_items)
-            at_valid_dtcs_map[ambiguation_term] = valid_candidates
-        return at_valid_dtcs_map
-at_dtcs_map = at_dtcs(limit=10)
-at_valid_dtcs_map = at_valid_dtcs(at_dtcs_map,limit=10)
+
+
+# This method gets the entity type hierarchy for each (at,vdt) pair.
+# (AT,VDT,[ET1,ET2,ET3,ET4..])
+def at_vdt_eth(limit=None):
+    at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
+
+    with open(AT_VDT_ETH_FILENAME, mode='w') as at_vdt_eth_file:
+        writer = csv.writer(at_vdt_eth_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
+
+        for ambiguation_term,valid_disambiguation_terms in at_vdts_map.items():
+            ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), DISAMBIGUATION_REFERENCE)
+            
+            row_items = []
+            for vdt in valid_disambiguation_terms:
+                row_items.append(ambiguation_term_title)
+                row_items.append(vdt.title())
+
+                print(type(vdt))
+                eth = extract_class_path(vdt)
+                print(eth)
+                # TODO: Some of the vdt's doesn't have a page in wikidata.
+                if eth is not None:
+                    for et in eth:
+                        row_items.append(et)
+                writer.writerow(row_items)
+
+#at_dtcs(limit=LIMIT)
+#at_vdts(limit=LIMIT)
+at_vdt_eth(limit=LIMIT)
