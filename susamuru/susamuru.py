@@ -31,6 +31,7 @@ QUOTE_CHAR = '"'
 AT_DTCS_FILENAME = "./dataset/at_dtcs.csv"  
 AT_VDTS_FILENAME = "./dataset/at_vdts.csv"
 AT_VDT_ETH_FILENAME = "./dataset/at_vdt_eth.csv"
+AT_VDT_RPTS_FILENAME = "./dataset/at_vdt_rpts.csv"
 
 def get_salt_text(wiki_text):
     wikicode = mwparserfromhell.parse(wiki_text)
@@ -219,8 +220,23 @@ def extract_class_path(page):
     ---------------
     Filters the candidates. Candidates that includes the ambiguous 
     term is accepted as a valid disambiguation term. Others are discarded.
-    Uses the map that is created with the 1st method's creation .
+    Uses the csv file that is created with the 1st method's.
 
+    3rd Step: at_vdt_eth
+    ---------------
+    Gets the entity type hierarchy (list) of the given 
+    (ambiguous term, valid disambiguation term) pair. Uses the information 
+    that is in at_vdts.csv file.
+
+    4th Step: at_vdt_rpts
+    ---------------
+    Gets the all (ambiguous term, valid disambiguation term) pairs from 
+    at_vdts.csv file.
+    Query every vdt page to find the pages that they are referenced from.
+    Get all the texts in wikidata syntax from those pages. Put them in a list
+    construct the following data type 
+    (at,vdt,[rpt_1,rpt_2,rpt_3, ...])
+    rpt = (vdt) referencing page text.
 '''
 def at_dtcs(limit=None):
     # Get every ambiguation term.
@@ -281,29 +297,59 @@ def at_vdts(limit=None):
 
 # This method gets the entity type hierarchy for each (at,vdt) pair.
 # (AT,VDT,[ET1,ET2,ET3,ET4..])
+# This works but takes a long time, querying wikidata takes a lot of time.
+# We can maybe first flatten all the disambiguate terms and then query wikidata 
+# and save it to a file for future usage.
 def at_vdt_eth(limit=None):
     at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
 
     with open(AT_VDT_ETH_FILENAME, mode='w') as at_vdt_eth_file:
         writer = csv.writer(at_vdt_eth_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
 
-        for ambiguation_term,valid_disambiguation_terms in at_vdts_map.items():
-            ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), DISAMBIGUATION_REFERENCE)
-            
+        for ambiguation_term_title,valid_disambiguation_terms in at_vdts_map.items():            
             row_items = []
             for vdt in valid_disambiguation_terms:
                 row_items.append(ambiguation_term_title)
                 row_items.append(vdt.title())
-
-                print(type(vdt))
                 eth = extract_class_path(vdt)
-                print(eth)
+
                 # TODO: Some of the vdt's doesn't have a page in wikidata.
                 if eth is not None:
                     for et in eth:
                         row_items.append(et)
                 writer.writerow(row_items)
 
+def extract_wiki_text_from_referenced_pages(page):  # incomplete
+    refs = list(page.getReferences())
+    texts = []
+    for ref in refs:
+        if not ref.isDisambig():
+            page_text = ref.text
+            texts.append(page_text)
+    return texts
+
+def at_vdt_rpts(limit=None):
+    at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
+
+    with open(AT_VDT_RPTS_FILENAME, mode='w') as at_vdt_rpts_file:
+        writer = csv.writer(at_vdt_rpts_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
+
+        for at_title,vdts in at_vdts_map.items():
+            row_items = []    
+            for vdt in vdts:
+                row_items.append(at_title)
+                row_items.append(vdt.title())
+                
+                # In future we will get this text only one time. 
+                # Map architecture.
+                rpts = extract_wiki_text_from_referenced_pages(vdt)
+                for rpt in rpts:
+                    row_items.append(rpt)
+                writer.writerow(row_items)
+
+def at_vdt_s(limit=None):
+    pass
 #at_dtcs(limit=LIMIT)
 #at_vdts(limit=LIMIT)
-at_vdt_eth(limit=LIMIT)
+#at_vdt_eth(limit=LIMIT)
+at_vdt_rpts()
