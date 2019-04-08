@@ -60,6 +60,7 @@ def get_ambiguous_term_generator():
     return SITE.disambcategory().articles()
 
 def get_ambiguous_terms(limit=None):
+    print("Getting all ambiguous terms...")
     generator = get_ambiguous_term_generator()
 
     # Convert to list 
@@ -70,6 +71,7 @@ def get_ambiguous_terms(limit=None):
         pages.append(page)
         #break  # DEBUG for test purposes
         if limit is not None and len(pages) > limit: break  # DEBUG
+    print("Finished getting all disambiguation terms.")
     return pages
 
 
@@ -275,6 +277,7 @@ def extract_class_path(page):
 '''
 def at_dtcs(limit=None):
     # Get every ambiguation term.
+    print("\nStarting 1st Step...")
     ambiguous_terms = get_ambiguous_terms(limit)
 
     with open(AT_DTCS_FILENAME, mode='w') as at_dtcs_file:
@@ -292,6 +295,7 @@ def at_dtcs(limit=None):
             row_items = disamb_candidate_titles
             row_items.insert(0,ambiguation_term_title)
             writer.writerow(row_items)
+    print("1st Step is complete [ at_dcts.csv is ready ]\n")
 
 # This method constructs the at_dtcs map from the at_dtcs.csv file.
 def construct_at_dt_map_from_file(filename):
@@ -313,6 +317,7 @@ def get_valid_candidates(ambiguation_term_title,candidates):
     return valid_candidates
 
 def at_vdts(limit=None):
+    print("\nStarting 2nd Step...")
     at_dtcs_map = construct_at_dt_map_from_file(AT_DTCS_FILENAME)
 
     with open(AT_VDTS_FILENAME, mode='w') as at_vdts_file:
@@ -328,7 +333,7 @@ def at_vdts(limit=None):
             row_items = valid_candidate_titles
             row_items.insert(0, ambiguation_term_title)
             writer.writerow(row_items)
-
+    print("2nd Step is complete. [ at_vdts.csv is ready ].\n")
 
 # This method gets the entity type hierarchy for each (at,vdt) pair.
 # (AT,VDT,[ET1,ET2,ET3,ET4..])
@@ -387,6 +392,7 @@ def generate_foldername(at_title,vdt_title):
     return foldername.replace(' ','_')
 
 def at_vdt_rpts(limit=None):
+    print("\nStarting 3rd Step...")
     at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
 
     with open(AT_VDT_RPTS_FILENAME, mode='w') as at_vdt_rpts_file:
@@ -424,7 +430,7 @@ def at_vdt_rpts(limit=None):
                 writer.writerow(row_items)
                 row_items = []
                 print("Writing operation completed.")
-
+    print("3rd Step is complete. [ at_vdt_rpts.csv is ready ].\n")            
 def construct_at_vdt_rpts_map_from_file(filename):
     at_vdt_rpts_map = {}
     with open(filename, newline='') as csvfile:
