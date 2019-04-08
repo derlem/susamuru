@@ -1,8 +1,11 @@
+
+import sys
 import json
 import os
 import pprint
 import re
 import csv
+import datetime
 
 import mwparserfromhell
 import nltk
@@ -10,9 +13,22 @@ import pywikibot
 
 import utils
 
+
+# Added to be able to read the large csv fields.
+maxInt = sys.maxsize
+while True:
+    # decrease the maxInt value by factor 10 
+    # as long as the OverflowError occurs.
+    try:
+        csv.field_size_limit(maxInt)
+        break
+    except OverflowError:
+        maxInt = int(maxInt/10)
+
+
 nltk.download('punkt')
 
-LIMIT = 50
+LIMIT = 10
 
 print("You should set CODE accordingly default is 'tr' for Turkish")
 print("You should set FAMILY accordingly default is 'wikipedia' for wikipedia")
@@ -24,8 +40,10 @@ SITE = pywikibot.Site(CODE, FAMILY)
 DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
 INSTANCE_OF_PROPERTY_CODE = "P31"
 SUBCLASS_PROPERTY_CODE = "P279"
-DELIMITER = ","
-QUOTE_CHAR = '"'
+
+# In case it didn't work, put tab character
+DELIMITER = "\t"
+QUOTE_CHAR = '§'
 
 # All Ambiguous Terms and their all disambiguation term candidates are found in this file
 AT_DTCS_FILENAME = "./dataset/at_dtcs.csv"  
@@ -179,6 +197,9 @@ def extract_class_path(page):
     except pywikibot.exceptions.NoPage:
         # This means wikidata page does not exists for this wikipedia page
         return None
+
+    print(wd_page)
+    #raise Exception
     curr_page = wd_page
     claims = curr_page.text["claims"]
     class_path = []
@@ -237,6 +258,15 @@ def extract_class_path(page):
     construct the following data type 
     (at,vdt,[rpt_1,rpt_2,rpt_3, ...])
     rpt = (vdt) referencing page text.
+    
+    5th Step: at_vdt_ss
+    ---------------
+    Get the sentences in raw format that include the vdt.
+    Hash the wiki syntaxed text links, change the links to hashed versions. 
+    Seperate the sentences with nltk, change the hashed value to original value. 
+    Construct the tuple. s being the sentence.
+    (at,vdt,s)
+
 '''
 def at_dtcs(limit=None):
     # Get every ambiguation term.
@@ -311,22 +341,34 @@ def at_vdt_eth(limit=None):
             for vdt in valid_disambiguation_terms:
                 row_items.append(ambiguation_term_title)
                 row_items.append(vdt.title())
+                print("started")
                 eth = extract_class_path(vdt)
-
+                print("finished")
                 # TODO: Some of the vdt's doesn't have a page in wikidata.
                 if eth is not None:
                     for et in eth:
                         row_items.append(et)
                 writer.writerow(row_items)
 
-def extract_wiki_text_from_referenced_pages(page):  # incomplete
+def get_referring_pages_and_texts(page): 
     refs = list(page.getReferences())
-    texts = []
+    page_name_text_tuples = []
     for ref in refs:
         if not ref.isDisambig():
             page_text = ref.text
-            texts.append(page_text)
-    return texts
+            page_text_tuple = (ref.title(),page_text)
+            page_name_text_tuples.append(page_text_tuple)
+    return page_name_text_tuples
+
+def generate_filename(key,pagename):
+    # Append the key to first name.
+    filename = str(key[0]) + str(key[1]) + pagename
+    
+    # Add the time.
+    now = datetime.datetime.now()
+    filename += str(now)
+    filename = filename.replace(' ','_')
+    return filename
 
 def at_vdt_rpts(limit=None):
     at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
@@ -337,19 +379,39 @@ def at_vdt_rpts(limit=None):
         for at_title,vdts in at_vdts_map.items():
             row_items = []    
             for vdt in vdts:
+                vdt_title = vdt.title()
+
                 row_items.append(at_title)
-                row_items.append(vdt.title())
+                row_items.append(vdt_title)
                 
-                # In future we will get this text only one time. 
-                # Map architecture.
-                rpts = extract_wiki_text_from_referenced_pages(vdt)
+                rpts = get_referring_pages_and_texts(vdt)
                 for rpt in rpts:
-                    row_items.append(rpt)
+                    # Write the name of the referring page to csv
+                    filename = generate_filename((at_title,vdt_title))
+                    row_items.append(filename)
+                    
+                    # Write the text to a page.
+                    # TODO: CREATE A FOLDER AND A FILE. WRITE CONTENT INSIDE.
+                    
                 writer.writerow(row_items)
 
-def at_vdt_s(limit=None):
-    pass
-#at_dtcs(limit=LIMIT)
-#at_vdts(limit=LIMIT)
-#at_vdt_eth(limit=LIMIT)
+def construct_at_vdt_rpts_map_from_file(filename):
+    at_vdt_rpts_map = {}
+    with open(filename, newline='') as csvfile:
+        reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
+        for row in reader:
+            key = (row[0],row[1])
+            texts = [text for text in row[2:]]
+            at_vdt_rpts_map[key] = texts
+        return at_vdt_rpts_map
+
+def at_vdt_ss(limit=None):
+    at_vdt_rpts_map = construct_at_vdt_rpts_map_from_file(AT_VDT_RPTS_FILENAME)
+    for key,value in at_vdt_rpts_map.items():
+        print(key, len(value))
+
+at_dtcs(limit=LIMIT)
+at_vdts(limit=LIMIT)
+# at_vdt_eth(limit=LIMIT)
 at_vdt_rpts()
+at_vdt_ss()
