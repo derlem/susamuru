@@ -28,7 +28,8 @@ while True:
 
 nltk.download('punkt')
 
-LIMIT = 10
+LIMIT = 1
+A_START_INDEX = 160
 
 print("You should set CODE accordingly default is 'tr' for Turkish")
 print("You should set FAMILY accordingly default is 'wikipedia' for wikipedia")
@@ -42,8 +43,8 @@ INSTANCE_OF_PROPERTY_CODE = "P31"
 SUBCLASS_PROPERTY_CODE = "P279"
 
 # In case it didn't work, put tab character
-DELIMITER = "\t"
-QUOTE_CHAR = '§'
+DELIMITER = ","
+QUOTE_CHAR = '"'
 
 # All Ambiguous Terms and their all disambiguation term candidates are found in this file
 AT_DTCS_FILENAME = "./dataset/at_dtcs.csv"  
@@ -60,6 +61,10 @@ def get_ambiguous_term_generator():
 
 def get_ambiguous_terms(limit=None):
     generator = get_ambiguous_term_generator()
+
+    # Convert to list 
+    generator = list(generator)
+    generator = generator[A_START_INDEX:]
     pages = []
     for page in generator:
         pages.append(page)
@@ -285,7 +290,7 @@ def at_dtcs(limit=None):
             # Items that are going to be printed.
             row_items = []
             row_items = disamb_candidate_titles
-            row_items.insert(0, ambiguation_term_title)
+            row_items.insert(0,ambiguation_term_title)
             writer.writerow(row_items)
 
 # This method constructs the at_dtcs map from the at_dtcs.csv file.
@@ -350,8 +355,10 @@ def at_vdt_eth(limit=None):
                         row_items.append(et)
                 writer.writerow(row_items)
 
-def get_referring_pages_and_texts(page): 
+def get_referring_pages_and_texts(page):
     refs = list(page.getReferences())
+    print("There are [ " + str(len(refs)) + " ] referring pages.")
+    print("Getting pages and texts...")
     page_name_text_tuples = []
     for ref in refs:
         if not ref.isDisambig():
@@ -362,13 +369,22 @@ def get_referring_pages_and_texts(page):
 
 def generate_filename(key,pagename):
     # Append the key to first name.
-    filename = str(key[0]) + str(key[1]) + pagename
-    
+    pagename = pagename.replace('/','&')
+    #at = str(key[0]).replace('/','&')
+    #vdt = str(key[1]).replace('/','&')
+
+    #filename = at + "_" + vdt + "_" + pagename
+    filename = pagename
+
     # Add the time.
     now = datetime.datetime.now()
-    filename += str(now)
+    filename += "_" + str(now) + ".md"
     filename = filename.replace(' ','_')
     return filename
+
+def generate_foldername(at_title,vdt_title):
+    foldername = "./dataset/pages/" + at_title + "_" + vdt_title
+    return foldername.replace(' ','_')
 
 def at_vdt_rpts(limit=None):
     at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
@@ -384,16 +400,30 @@ def at_vdt_rpts(limit=None):
                 row_items.append(at_title)
                 row_items.append(vdt_title)
                 
+                print("\nProcessing referencing pages for AT: [ " + at_title +" ] and VDT: [ "+ vdt_title + " ]")
                 rpts = get_referring_pages_and_texts(vdt)
+                print("All references are fetched.")
+                print("Starting to write the fetched texts to files...")
+                
                 for rpt in rpts:
-                    # Write the name of the referring page to csv
-                    filename = generate_filename((at_title,vdt_title))
-                    row_items.append(filename)
+                    # rpt[0]:referring page title 
+                    # rpt[1]:referring page text 
+                    foldername = generate_foldername(at_title,vdt_title)
+                    filename = generate_filename((at_title,vdt_title), rpt[0])
+                    filepath = foldername + "/" + filename
+                    row_items.append(filepath)
+
+                    if not os.path.exists(foldername):
+                        os.mkdir(foldername)                    
                     
-                    # Write the text to a page.
-                    # TODO: CREATE A FOLDER AND A FILE. WRITE CONTENT INSIDE.
-                    
+                    f = open(filepath,"w+")
+
+                    # Write the text into the file.
+                    f.write(rpt[1])
+                    f.close()
                 writer.writerow(row_items)
+                row_items = []
+                print("Writing operation completed.")
 
 def construct_at_vdt_rpts_map_from_file(filename):
     at_vdt_rpts_map = {}
@@ -410,8 +440,8 @@ def at_vdt_ss(limit=None):
     for key,value in at_vdt_rpts_map.items():
         print(key, len(value))
 
-at_dtcs(limit=LIMIT)
-at_vdts(limit=LIMIT)
+at_dtcs()
+at_vdts()
 # at_vdt_eth(limit=LIMIT)
 at_vdt_rpts()
-at_vdt_ss()
+# at_vdt_ss()
