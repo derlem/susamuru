@@ -50,6 +50,7 @@ QUOTE_CHAR = '"'
 AT_DTCS_FILENAME = "./dataset/at_dtcs.csv"  
 AT_VDTS_FILENAME = "./dataset/at_vdts.csv"
 AT_VDT_ETH_FILENAME = "./dataset/at_vdt_eth.csv"
+WIKIDATA_CACHE_FILENAME = "./dataset/wikidata_cache.json"
 AT_VDT_RPTS_FILENAME = "./dataset/at_vdt_rpts.csv"
 
 def get_salt_text(wiki_text):
@@ -198,15 +199,12 @@ def collect(limit=None, directory="./dataset"):
         json.dump(stat_dict, f)
 
 
-def extract_class_path(page):
+def extract_class_path(page, cache):
     try:
         wd_page = pywikibot.ItemPage.fromPage(page)
     except pywikibot.exceptions.NoPage:
         # This means wikidata page does not exists for this wikipedia page
         return None
-
-    print(wd_page)
-    #raise Exception
     curr_page = wd_page
     claims = curr_page.text["claims"]
     class_path = []
@@ -215,7 +213,13 @@ def extract_class_path(page):
         claim = claims[INSTANCE_OF_PROPERTY_CODE][0]
         curr_page = claim.target
         if "labels" in curr_page.text and "en" in curr_page.text["labels"]:
-            class_path.append(curr_page.text["labels"]["en"])
+            entity_type = curr_page.text["labels"]["en"]
+            class_path.append(entity_type)
+            # Check Cache
+            if entity_type in cache:
+                rest = cache[entity_type]
+                class_path.extend(rest)
+                return class_path
         if "claims" in curr_page.text:
             claims = curr_page.text["claims"]
         else:
@@ -228,7 +232,13 @@ def extract_class_path(page):
         else:
             break
         if "labels" in curr_page.text and "en" in curr_page.text["labels"]:
-            class_path.append(curr_page.text["labels"]["en"])
+            entity_type = curr_page.text["labels"]["en"]
+            class_path.append(entity_type)
+            # Check Cache
+            if entity_type in cache:
+                rest = cache[entity_type]
+                class_path.extend(rest)
+                return class_path
     return class_path
 
 # =========================================================================== 
@@ -342,23 +352,36 @@ def at_vdts(limit=None):
 # and save it to a file for future usage.
 def at_vdt_eth(limit=None):
     at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
-
+    if not os.path.isfile(WIKIDATA_CACHE_FILENAME):
+        wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'w+')
+        wikidata_cache_dict = {}
+        wikidata_cache_file.close()
+    else:
+        wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'r')
+        wikidata_cache_dict = json.load(wikidata_cache_file)
+        wikidata_cache_file.close()
     with open(AT_VDT_ETH_FILENAME, mode='w') as at_vdt_eth_file:
         writer = csv.writer(at_vdt_eth_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
-
         for ambiguation_term_title,valid_disambiguation_terms in at_vdts_map.items():            
             row_items = []
             for vdt in valid_disambiguation_terms:
                 row_items.append(ambiguation_term_title)
                 row_items.append(vdt.title())
-                print("started")
-                eth = extract_class_path(vdt)
-                print("finished")
+                eth = extract_class_path(vdt, cache=wikidata_cache_dict)
                 # TODO: Some of the vdt's doesn't have a page in wikidata.
                 if eth is not None:
+                    # Write Cache
+                    for i in range(len(eth)):
+                        if eth[i] not in wikidata_cache_dict:
+                            wikidata_cache_dict[eth[i]] = eth[i+1:]
                     for et in eth:
                         row_items.append(et)
-                writer.writerow(row_items)
+                    writer.writerow(row_items)
+                    row_items = []
+    
+    wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'w+')
+    json.dump(wikidata_cache_dict, wikidata_cache_file)
+    wikidata_cache_file.close()
 
 def get_referring_pages_and_texts(page):
     refs = list(page.getReferences())
@@ -446,8 +469,8 @@ def at_vdt_ss(limit=None):
     for key,value in at_vdt_rpts_map.items():
         print(key, len(value))
 
-at_dtcs()
-at_vdts()
+# at_dtcs()
+# at_vdts()
 # at_vdt_eth(limit=LIMIT)
-at_vdt_rpts()
+# at_vdt_rpts()
 # at_vdt_ss()
