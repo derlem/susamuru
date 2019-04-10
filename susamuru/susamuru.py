@@ -377,7 +377,7 @@ def at_vdt_eth(limit=None):
                     for et in eth:
                         row_items.append(et)
                     writer.writerow(row_items)
-                    row_items = []
+                row_items = []
     
     wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'w+')
     json.dump(wikidata_cache_dict, wikidata_cache_file)
