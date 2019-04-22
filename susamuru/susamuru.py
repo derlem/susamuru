@@ -313,7 +313,6 @@ def construct_at_dt_map_from_file(filename):
     with open(filename, newline='') as csvfile:
         reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
         for row in reader:
-            
             # Put the pages into the map.
             pages = [pywikibot.Page(SITE,page_name) for page_name in row[1:]]
             at_dt_map[row[0]] = pages
@@ -470,10 +469,11 @@ def at_vdt_ss(limit=None):
     for key,value in at_vdt_rpts_map.items():
         print(key, len(value))
 
-#at_dtcs()
-#at_vdts()
+# at_dtcs()
+# at_vdts()
+dataset_manager.create_dataset(page_limit_per_at=22)
+
 # at_vdt_eth(limit=LIMIT)
 # at_vdt_rpts()
 # at_vdt_ss()
 
-dataset_manager.create_dataset(page_limit_per_at=22)
