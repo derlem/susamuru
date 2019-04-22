@@ -12,7 +12,7 @@ import nltk
 import pywikibot
 
 import utils
-
+import dataset_manager
 
 # Added to be able to read the large csv fields.
 maxInt = sys.maxsize
@@ -414,6 +414,7 @@ def generate_foldername(at_title,vdt_title):
     foldername = "./dataset/pages/" + at_title + "_" + vdt_title
     return foldername.replace(' ','_')
 
+# Deprecated.
 def at_vdt_rpts(limit=None):
     print("\nStarting 3rd Step...")
     at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
@@ -469,8 +470,10 @@ def at_vdt_ss(limit=None):
     for key,value in at_vdt_rpts_map.items():
         print(key, len(value))
 
-# at_dtcs()
-# at_vdts()
+#at_dtcs()
+#at_vdts()
 # at_vdt_eth(limit=LIMIT)
 # at_vdt_rpts()
 # at_vdt_ss()
+
+dataset_manager.create_dataset(page_limit_per_at=22)
