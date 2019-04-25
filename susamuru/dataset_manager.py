@@ -34,7 +34,6 @@ def get_page_information(dumpfile):
 			link_regex = r'(\[\[([a-zA-Z\u0080-\uFFFF ]+)\]\]|\[\[([a-zA-Z\u0080-\uFFFF ]+)\|([a-zA-Z\u0080-\uFFFF ]+)\]\])'
 			
 			if isinstance(revision.text,str):
-				
 				# Get the matched strings.
 				matches = re.finditer(link_regex,revision.text)
 				if matches:
@@ -49,7 +48,14 @@ def get_page_information(dumpfile):
 						if page_name == None: page_name = m.group(3)
 
 						page_links_hashes[hash_of_link] = {'wiki_text': m.group(1), 'page_name': page_name ,'seen_text': seen_text}
-				print_dict(page_links_hashes)
+				#print_dict(page_links_hashes)
+			
+			# Change the wiki_text in the text with the hash 
+
+			# Seperate sentences with nltk
+
+			# Find the sentences with the hashes and replace the hash with the seen_text. Save starting and ending positions.
+			# Append to the big map key: vdt value: [ { sentence: , word_start: , word_end: } ] 
 		break
 	print("Finished getting all the pages from the dump. Page count: ", len(vdt_sentences_map))
 	return 0
