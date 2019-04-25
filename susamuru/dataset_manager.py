@@ -2,6 +2,7 @@ import mwxml
 import csv
 import re
 import time
+import hashlib
 
 DELIMITER = ","
 QUOTE_CHAR = '"'
@@ -17,6 +18,10 @@ def get_vdt_map():
             at_dt_map[row[0]] = pages
         return at_dt_map
 
+def print_dict(map):
+	for key,value in map.items():
+		print("Key: ", str(key), " Value: ", value)
+
 def get_page_information(dumpfile):
 	
 	print("Getting vdt & sentences map from the dump file...")
@@ -24,22 +29,31 @@ def get_page_information(dumpfile):
 	dump = mwxml.Dump.from_file(open(dumpfile))
 
 	for page in dump:
-		page_links_hash = {}
+		page_links_hashes = {}
 		for revision in page:
-			link_regex = r'(\[\[([a-zA-Z\u0080-\uFFFF ]+)\]\]|\[\[[a-zA-Z\u0080-\uFFFF ]+\|([a-zA-Z\u0080-\uFFFF ]+)\]\])'
+			link_regex = r'(\[\[([a-zA-Z\u0080-\uFFFF ]+)\]\]|\[\[([a-zA-Z\u0080-\uFFFF ]+)\|([a-zA-Z\u0080-\uFFFF ]+)\]\])'
 			
 			if isinstance(revision.text,str):
-				matches = re.finditer(link_regex,revision.text)
 				
+				# Get the matched strings.
+				matches = re.finditer(link_regex,revision.text)
 				if matches:
 					for m in matches:
-						print('In page: ', page.title, " found linkname: ", m.group(0))
-						print('In page: ', page.title, " found linkname: ", m.group(1))
-						print('In page: ', page.title, " found linkname: ", m.group(2))
-						print("#"*50)
+						# Get the hash of a matched link.
+						hash_of_link = hashlib.sha256(m.group(0).encode('utf-8')).hexdigest()
+						
+						seen_text = m.group(4)
+						if seen_text == None: seen_text = m.group(2)
+						
+						page_name = m.group(2)
+						if page_name == None: page_name = m.group(3)
+
+						page_links_hashes[hash_of_link] = {'wiki_text': m.group(1), 'page_name': page_name ,'seen_text': seen_text}
+				print_dict(page_links_hashes)
 		break
 	print("Finished getting all the pages from the dump. Page count: ", len(vdt_sentences_map))
 	return 0
+
 
 def get_links_for_page(pagemap,linkname,sentence_limit=None):
 	# Get the links from the page texts and return the sentences in a list. 
