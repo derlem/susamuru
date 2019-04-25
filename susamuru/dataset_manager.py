@@ -19,22 +19,32 @@ def get_vdt_map():
 
 def get_page_information(dumpfile):
 	
-	print("Getting pages from the dump file...")
-	pagetitle_page_map = {}
-
+	print("Getting vdt & sentences map from the dump file...")
+	vdt_sentences_map = {}
 	dump = mwxml.Dump.from_file(open(dumpfile))
 
 	for page in dump:
+		page_links_hash = {}
 		for revision in page:
-			pagetitle_page_map[page.title] = {'pageid': page.id, 'text':revision.text}
-			break
-	print("Finished getting all the pages from the dump. Page count: ", len(pagetitle_page_map))
-	return pagetitle_page_map
+			link_regex = r'(\[\[([a-zA-Z\u0080-\uFFFF ]+)\]\]|\[\[[a-zA-Z\u0080-\uFFFF ]+\|([a-zA-Z\u0080-\uFFFF ]+)\]\])'
+			
+			if isinstance(revision.text,str):
+				matches = re.finditer(link_regex,revision.text)
+				
+				if matches:
+					for m in matches:
+						print('In page: ', page.title, " found linkname: ", m.group(0))
+						print('In page: ', page.title, " found linkname: ", m.group(1))
+						print('In page: ', page.title, " found linkname: ", m.group(2))
+						print("#"*50)
+		break
+	print("Finished getting all the pages from the dump. Page count: ", len(vdt_sentences_map))
+	return 0
 
 def get_links_for_page(pagemap,linkname,sentence_limit=None):
 	# Get the links from the page texts and return the sentences in a list. 
 	# This is the part we need to traverse all pages.
-	link_regex = r'\[\[('+ re.escape(str(linkname)) + r'|'+ re.escape(str(linkname)) + r'\|.*)\]\]'
+	link_regex = r'\[\[('+ re.escape(str(linkname)) + r'|'+ re.escape(str(linkname)) + r'\|[^\]\]]*)\]\]'
 	for page_title,page_info in pagemap.items():
 		page_text = page_info['text']
 		if isinstance(page_text,str):
@@ -46,7 +56,7 @@ def get_links_for_page(pagemap,linkname,sentence_limit=None):
 
 def create_dataset(page_limit_per_at=None, dumpfile="./dataset/trwiki-20190401-pages-articles-multistream.xml"):   
 	vdt_map = get_vdt_map()
-	'''
+	
 	map_construction_start_time = time.time()
 	pagetitle_page_map = get_page_information(dumpfile)
 	map_construction_end_time = time.time()
@@ -54,13 +64,9 @@ def create_dataset(page_limit_per_at=None, dumpfile="./dataset/trwiki-20190401-p
 	# Get the links from the page texts and put them in a map given as key: Linked page value: [sentence]
 	
 	start_time = time.time()
-	get_links_for_page(pagetitle_page_map,"Galatasaray")
+	#get_links_for_page(pagetitle_page_map,"Galatasaray")
 	end_time = time.time()
 
 	print("Map construction takes: ", (map_construction_end_time - map_construction_start_time), " seconds.")
 	print("One vdt link search takes: ", (end_time - start_time), " seconds.")
-	'''
-	count = 0
-	for key,value in vdt_map.items():
-		count += len(value)
-	print(count) 
+	
