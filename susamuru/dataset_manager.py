@@ -24,15 +24,16 @@ def print_list(l):
 
 def get_vdt_map():
 	print("Starting to construct AT -> [VDT,VDT,VDT] map.")
-    at_vdt_map = {}
-    with open(AT_VDTS_FILENAME, newline='') as csvfile:
-        reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
-        for row in reader:
-            # Put the pages into the map.
-            pages = row[1:]
-            at_vdt_map[row[0]] = pages
-        return at_vdt_map
-    print("Finished constructing AT -> [VDT,VDT,VDT] map.")
+	at_vdt_map = {}
+
+	with open(AT_VDTS_FILENAME, newline='') as csvfile:
+		reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
+		for row in reader:
+			pages = row[1:]
+			at_vdt_map[row[0]] = pages
+		return at_vdt_map
+
+	print("Finished constructing AT -> [VDT,VDT,VDT] map.")
 
 # Not finished
 def remove_references(wiki_text):
@@ -165,12 +166,11 @@ def generate_at_vdt_sentence_start_end_csv(dumpfile="./dumps/trwiki-20190401-pag
 	vdt_map = get_vdt_map()
 
 	map_construction_start_time = time.time()
-	#pagename_sentences = get_all_pagename_sentences_map(dumpfile)
-	print_dict(pagename_sentences)
+	pagename_sentences = get_all_pagename_sentences_map(dumpfile)	
 	map_construction_end_time = time.time()
 	
 	start_time = time.time()
-#	construct_final_csv(pagename_sentences,vdt_map)
+	construct_final_csv(pagename_sentences,vdt_map)
 	end_time = time.time()
 
 	print("Pagename-Sentence map construction took: ", (map_construction_end_time - map_construction_start_time), " seconds.")
