@@ -126,3 +126,4 @@ pywikibot.lwp
 
 # Dataset
 dataset/
+dumps/trwiki-20190401-pages-articles-multistream.xml
