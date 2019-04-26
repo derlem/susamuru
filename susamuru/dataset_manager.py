@@ -23,14 +23,16 @@ def print_list(l):
 		print("-"*50)
 
 def get_vdt_map():
-    at_dt_map = {}
+	print("Starting to construct AT -> [VDT,VDT,VDT] map.")
+    at_vdt_map = {}
     with open(AT_VDTS_FILENAME, newline='') as csvfile:
         reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
         for row in reader:
             # Put the pages into the map.
             pages = row[1:]
-            at_dt_map[row[0]] = pages
-        return at_dt_map
+            at_vdt_map[row[0]] = pages
+        return at_vdt_map
+    print("Finished constructing AT -> [VDT,VDT,VDT] map.")
 
 # Not finished
 def remove_references(wiki_text):
@@ -84,20 +86,22 @@ def get_all_pagename_sentences_map(dumpfile):
 	vdt_sentences_map = {}
 	dump = mwxml.Dump.from_file(open(dumpfile))
 	total_sentence_count = 0
-
+	page_count = 0
 	for page in dump:
+		print("Getting the links from the page: ", page.title)
 		page_links_hashes = {}
 		for revision in page:
 			link_regex = r'(\[\[([a-zA-Z\u0080-\uFFFF ()]+)\]\]|\[\[([a-zA-Z\u0080-\uFFFF ()]+)\|([a-zA-Z\u0080-\uFFFF ]+)\]\])'
 			
 			if isinstance(revision.text,str):
+				page_count+=1
 				# Get the matched strings.
 				wiki_syntaxed_text = prepare_text(revision.text)
 				matches = re.finditer(link_regex,wiki_syntaxed_text)
 				if matches:
 					for m in matches:
 						# Get the hash of a matched link.
-						hash_of_link = hashlib.sha256(m.group(0).encode('utf-8')).hexdigest()
+						hash_of_link = hashlib.sha256(m.group(1).encode('utf-8')).hexdigest()
 						
 						seen_text = m.group(4)
 						if seen_text == None: seen_text = m.group(2)
@@ -120,27 +124,24 @@ def get_all_pagename_sentences_map(dumpfile):
 				sentences_with_hash = sent_tokenize(hash_replaced_text)
 
 				# Find the sentences with the hashes and replace the hash with the seen_text. Save starting and ending positions.
-				for hash_value,text_map in page_links_hashes.items():
+				for hash_value_,text_map_ in page_links_hashes.items():
 					for sentence in sentences_with_hash:
-						if hash_value in sentence:
-							#normal_sentence = sentence.replace(hash_value, text_map['seen_text']) # Replace the hash value with the seen text.
+						if hash_value_ in sentence:
 							normal_sentence = replace_hash_values_with_seen_text(sentence,page_links_hashes)
 							# normal_sentence = get_salt_text(normal_sentence)
-							vdt_start_index = normal_sentence.index(text_map['seen_text'])
-							vdt_end_index = vdt_start_index + len(text_map['seen_text'])
+							vdt_start_index = normal_sentence.index(text_map_['seen_text'])
+							vdt_end_index = vdt_start_index + len(text_map_['seen_text'])
 
 							# Increase total sentence count.
 							total_sentence_count+=1
 							
 							# Append to the big map key: vdt value: [ { sentence: , word_start: , word_end: } ] 
-							if text_map['page_name'] in vdt_sentences_map:
-								vdt_sentences_map[text_map['page_name']].append({ 'sentence': normal_sentence, 'start': vdt_start_index, 'end': vdt_end_index })
+							if text_map_['page_name'] in vdt_sentences_map:
+								vdt_sentences_map[text_map_['page_name']].append({ 'sentence': normal_sentence, 'start': vdt_start_index, 'end': vdt_end_index })
 							else:
-								vdt_sentences_map[text_map['page_name']] = [{ 'sentence': normal_sentence, 'start': vdt_start_index, 'end': vdt_end_index }]
-		# print("For page: ", page.title, " Found sentences for: ", len(page_links_hashes), " vdts.")
-		# print_dict(vdt_sentences_map)
-		# print('==='*25)
-		
+								vdt_sentences_map[text_map_['page_name']] = [{ 'sentence': normal_sentence, 'start': vdt_start_index, 'end': vdt_end_index }]
+		print("From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
+	print("Finished getting all sentences. Total Sentence Count: ", total_sentence_count)
 	print("Finished getting all the pages from the dump. Page count: ", len(vdt_sentences_map))
 	return vdt_sentences_map
 
@@ -162,13 +163,14 @@ def construct_final_csv(pagename_sentences,vdt_map):
 
 def generate_at_vdt_sentence_start_end_csv(dumpfile="./dumps/trwiki-20190401-pages-articles-multistream.xml"):   
 	vdt_map = get_vdt_map()
-	
+
 	map_construction_start_time = time.time()
-	pagename_sentences = get_all_pagename_sentences_map(dumpfile)
+	#pagename_sentences = get_all_pagename_sentences_map(dumpfile)
+	print_dict(pagename_sentences)
 	map_construction_end_time = time.time()
 	
 	start_time = time.time()
-	construct_final_csv(pagename_sentences,vdt_map)
+#	construct_final_csv(pagename_sentences,vdt_map)
 	end_time = time.time()
 
 	print("Pagename-Sentence map construction took: ", (map_construction_end_time - map_construction_start_time), " seconds.")
