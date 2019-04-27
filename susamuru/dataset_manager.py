@@ -196,9 +196,9 @@ def write_one_row(percentage,vdt_map,vdt,sentence,start,end):
 	# Determine the filename to write the data.
 	# Distribute pages equally to 3 pieces
 	filename = AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + "_PART_1.csv"
-	if percentage > 33.3:
+	if percentage > 66.6:
 		filename = AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + "_PART_2.csv"
-	elif percentage > 66.6:
+	elif percentage > 33.3:
 		filename = AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + "_PART_3.csv"
 
 	with open(filename, mode='a') as final_csv:
