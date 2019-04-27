@@ -1,6 +1,7 @@
 from nltk.tokenize import sent_tokenize
 import mwparserfromhell
 
+from datetime import datetime
 import mwxml
 import csv
 import re
@@ -13,7 +14,10 @@ QUOTE_CHAR = '"'
 AT_VDTS_FILENAME = "./dumps/at_vdts.csv"
 IGNORED_SENTENCES_FILE = "./output/ignored_sentences/ignored_sentences_"
 AT_VDT_SENTENCE_START_END_FILENAME = "./output/at_vdt_sentence_start_end_"
-TIME_SUFFIX = ""
+
+TIME_SUFFIX = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+TIME_SUFFIX = TIME_SUFFIX.replace(' ','_')
+TIME_SUFFIX = TIME_SUFFIX.replace(':','_')
 
 def print_dict(map):
 	for key,value in map.items():
@@ -171,14 +175,15 @@ def find_at(vdt_map,vdt):
 	return "No AT"
 
 def write_ignored_sentence(title,sentence):
-	with open(IGNORED_SENTENCES_FILE + TIME_SUFFIX + ".txt", mode='a') as ignored_file:
+	with open(IGNORED_SENTENCES_FILE + str(TIME_SUFFIX) + ".txt", mode='a') as ignored_file:
 		ignored_file.write(title)
 		ignored_file.write(sentence)
+		ignored_file.write("\n")
 		ignored_file.write("#"*50)
 		ignored_file.write("\n")
 
 def write_one_row(vdt_map,vdt,sentence,start,end):
-	with open(AT_VDT_SENTENCE_START_END_FILENAME + TIME_SUFFIX + ".csv", mode='a') as final_csv:
+	with open(AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + ".csv", mode='a') as final_csv:
 		writer = csv.writer(final_csv, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
 		at = find_at(vdt_map,vdt)
 		
@@ -194,7 +199,7 @@ def generate_at_vdt_sentence_start_end_csv(dumpfile="./dumps/trwiki-20190401-pag
 	vdt_map = get_vdt_map()
 
 	start_time = time.time()
-	TIME_SUFFIX = str(start_time.tm_mhour) + str(start_time.tm_min) + str(start_time.tm_min) + str(start_time.tm_mday) + str(start_time.tm_mon) + str(start_time.tm_year)
+	print(TIME_SUFFIX)
 	get_all_pagename_sentences(dumpfile,vdt_map)
 	end_time = time.time()
 	
