@@ -14,10 +14,13 @@ QUOTE_CHAR = '"'
 AT_VDTS_FILENAME = "./dumps/at_vdts.csv"
 IGNORED_SENTENCES_FILE = "./output/ignored_sentences/ignored_sentences_"
 AT_VDT_SENTENCE_START_END_FILENAME = "./output/at_vdt_sentence_start_end_"
+DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
 
-TIME_SUFFIX = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-TIME_SUFFIX = TIME_SUFFIX.replace(' ','_')
-TIME_SUFFIX = TIME_SUFFIX.replace(':','_')
+BLACKLIST = ["{{","}}","\n","style=\""]
+
+# This is just for debug.
+TOTAL_PAGE_COUNT = 909107
+TIME_SUFFIX = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
 def print_dict(map):
 	for key,value in map.items():
@@ -88,29 +91,35 @@ def replace_hash_values_with_seen_text(sentence, hashmap):
 			normal_sentence = normal_sentence.replace(hash_value,text_map['seen_text'])
 	return normal_sentence
 
-def get_all_pagename_sentences(dumpfile,vdt_map):	
+def is_valid_sentence(sentence):
+	for item in BLACKLIST:
+		if item in sentence:
+			return False
+	return True
 
-	'''
-	# Remove the old csv file if it exists.	
-	if (os.path.isfile(AT_VDT_SENTENCE_START_END_FILENAME)):
-		os.remove(AT_VDT_SENTENCE_START_END_FILENAME)
-	'''
-
+def get_all_pagename_sentences(dumpfile,vdt_map):
 	print("Getting vdt & sentences map from the dump file...")
 	dump = mwxml.Dump.from_file(open(dumpfile))
 	total_sentence_count = 0
 	page_count = 0
 	ignored_sentence_count = 0
 	valid_sentence_count = 0
+	percentage = 0.0
 
 	for page in dump:
-		print("Getting the links from the page: ", page.title)
+
+		# Ignore disambiguation pages.
+		if DISAMBIGUATION_REFERENCE in page.title:
+			continue
+
+		percentage = (page_count*100.0)/TOTAL_PAGE_COUNT
 		page_links_hashes = {}
+		page_count+=1
+
 		for revision in page:
 			link_regex = r'(\[\[([a-zA-Z\u0080-\uFFFF ()]+)\]\]|\[\[([a-zA-Z\u0080-\uFFFF ()]+)\|([a-zA-Z\u0080-\uFFFF ]+)\]\])'
 			
 			if isinstance(revision.text,str):
-				page_count+=1
 				# Get the matched strings.
 				wiki_syntaxed_text = prepare_text(revision.text)
 				matches = re.finditer(link_regex,wiki_syntaxed_text)
@@ -126,7 +135,7 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 						if page_name == None: page_name = m.group(3)
 
 						page_links_hashes[hash_of_link] = {'wiki_text': m.group(1), 'page_name': page_name ,'seen_text': seen_text}
-				#print_dict(page_links_hashes)
+				# print_dict(page_links_hashes)
 			
 				# Change the wiki_text in the text with the hash 
 				hash_replaced_text = wiki_syntaxed_text
@@ -143,11 +152,14 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 				for hash_value_,text_map_ in page_links_hashes.items():
 					for sentence in sentences_with_hash:
 						if hash_value_ in sentence:
-							normal_sentence = replace_hash_values_with_seen_text(sentence,page_links_hashes)
-							
-							normal_sentence = get_salt_text(normal_sentence)
-							total_sentence_count+=1
+							# Check for unwanted text parts.
 
+							normal_sentence = replace_hash_values_with_seen_text(sentence,page_links_hashes)
+							normal_sentence = get_salt_text(normal_sentence)
+							if not is_valid_sentence(sentence):
+								continue
+
+							total_sentence_count+=1
 							try:
 								vdt_start_index = normal_sentence.index(text_map_['seen_text'])
 								vdt_end_index = vdt_start_index + len(text_map_['seen_text'])
@@ -156,11 +168,8 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 								valid_sentence_count +=1
 								write_one_row(vdt_map,text_map_['page_name'],normal_sentence,vdt_start_index,vdt_end_index)
 							except Exception as e:
-								print("Exception:", e)
-								print("Ignoring sentence")
 								write_ignored_sentence(page.title,normal_sentence)
-		print("From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
-	
+		print("% [", percentage, "] of pages processed. From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
 	print("Finished getting all sentences. (@_@)")
 	print("Total Sentence Count: ", total_sentence_count)
 	print("Ignored Sentence Count: ", ignored_sentence_count)
@@ -171,8 +180,7 @@ def find_at(vdt_map,vdt):
 	for at,vdts in vdt_map.items():	
 		if vdt in vdts:
 			return at
-	
-	return "No AT"
+	return None
 
 def write_ignored_sentence(title,sentence):
 	with open(IGNORED_SENTENCES_FILE + str(TIME_SUFFIX) + ".txt", mode='a') as ignored_file:
@@ -186,14 +194,14 @@ def write_one_row(vdt_map,vdt,sentence,start,end):
 	with open(AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + ".csv", mode='a') as final_csv:
 		writer = csv.writer(final_csv, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
 		at = find_at(vdt_map,vdt)
-		
-		row_items = []
-		row_items.append(at)
-		row_items.append(vdt)
-		row_items.append(sentence)
-		row_items.append(start)
-		row_items.append(end)
-		writer.writerow(row_items)
+		if at != None:
+			row_items = []
+			row_items.append(at)
+			row_items.append(vdt)
+			row_items.append(sentence)
+			row_items.append(start)
+			row_items.append(end)
+			writer.writerow(row_items)
 
 def generate_at_vdt_sentence_start_end_csv(dumpfile="./dumps/trwiki-20190401-pages-articles-multistream.xml"):
 	vdt_map = get_vdt_map()
