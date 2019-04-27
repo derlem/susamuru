@@ -6,11 +6,14 @@ import csv
 import re
 import time
 import hashlib
+import os
 
 DELIMITER = ","
 QUOTE_CHAR = '"'
 AT_VDTS_FILENAME = "./dumps/at_vdts.csv"
-AT_VDT_SENTENCE_START_END_FILENAME = "./output/at_vdt_sentence_start_end.csv"
+IGNORED_SENTENCES_FILE = "./output/ignored_sentences/ignored_sentences_"
+AT_VDT_SENTENCE_START_END_FILENAME = "./output/at_vdt_sentence_start_end_"
+TIME_SUFFIX = ""
 
 def print_dict(map):
 	for key,value in map.items():
@@ -81,13 +84,21 @@ def replace_hash_values_with_seen_text(sentence, hashmap):
 			normal_sentence = normal_sentence.replace(hash_value,text_map['seen_text'])
 	return normal_sentence
 
-def get_all_pagename_sentences_map(dumpfile):
-	
+def get_all_pagename_sentences(dumpfile,vdt_map):	
+
+	'''
+	# Remove the old csv file if it exists.	
+	if (os.path.isfile(AT_VDT_SENTENCE_START_END_FILENAME)):
+		os.remove(AT_VDT_SENTENCE_START_END_FILENAME)
+	'''
+
 	print("Getting vdt & sentences map from the dump file...")
-	vdt_sentences_map = {}
 	dump = mwxml.Dump.from_file(open(dumpfile))
 	total_sentence_count = 0
 	page_count = 0
+	ignored_sentence_count = 0
+	valid_sentence_count = 0
+
 	for page in dump:
 		print("Getting the links from the page: ", page.title)
 		page_links_hashes = {}
@@ -119,7 +130,7 @@ def get_all_pagename_sentences_map(dumpfile):
 					hash_replaced_text = hash_replaced_text.replace(text_map['wiki_text'],hash_value)
 
 				# Get rid of tables and other wiki syntax objects.
-				#hash_replaced_text = get_salt_text(hash_replaced_text)
+				# hash_replaced_text = get_salt_text(hash_replaced_text)
 				
 				# Seperate sentences with nltk
 				sentences_with_hash = sent_tokenize(hash_replaced_text)
@@ -129,50 +140,62 @@ def get_all_pagename_sentences_map(dumpfile):
 					for sentence in sentences_with_hash:
 						if hash_value_ in sentence:
 							normal_sentence = replace_hash_values_with_seen_text(sentence,page_links_hashes)
-							# normal_sentence = get_salt_text(normal_sentence)
-							vdt_start_index = normal_sentence.index(text_map_['seen_text'])
-							vdt_end_index = vdt_start_index + len(text_map_['seen_text'])
-
-							# Increase total sentence count.
-							total_sentence_count+=1
 							
-							# Append to the big map key: vdt value: [ { sentence: , word_start: , word_end: } ] 
-							if text_map_['page_name'] in vdt_sentences_map:
-								vdt_sentences_map[text_map_['page_name']].append({ 'sentence': normal_sentence, 'start': vdt_start_index, 'end': vdt_end_index })
-							else:
-								vdt_sentences_map[text_map_['page_name']] = [{ 'sentence': normal_sentence, 'start': vdt_start_index, 'end': vdt_end_index }]
+							normal_sentence = get_salt_text(normal_sentence)
+							total_sentence_count+=1
+
+							try:
+								vdt_start_index = normal_sentence.index(text_map_['seen_text'])
+								vdt_end_index = vdt_start_index + len(text_map_['seen_text'])
+								
+								# Increase total sentence count.	
+								valid_sentence_count +=1
+								write_one_row(vdt_map,text_map_['page_name'],normal_sentence,vdt_start_index,vdt_end_index)
+							except Exception as e:
+								print("Exception:", e)
+								print("Ignoring sentence")
+								write_ignored_sentence(page.title,normal_sentence)
 		print("From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
-	print("Finished getting all sentences. Total Sentence Count: ", total_sentence_count)
-	print("Finished getting all the pages from the dump. Page count: ", len(vdt_sentences_map))
-	return vdt_sentences_map
+	
+	print("Finished getting all sentences. (@_@)")
+	print("Total Sentence Count: ", total_sentence_count)
+	print("Ignored Sentence Count: ", ignored_sentence_count)
+	print("Valid Sentence Count: ", valid_sentence_count)
+	print("Valid/Total Ratio: ", (valid_sentence_count*100.0)/total_sentence_count)
 
-def construct_final_csv(pagename_sentences,vdt_map):
-	with open(AT_VDT_SENTENCE_START_END_FILENAME, mode='w+') as final_csv:
+def find_at(vdt_map,vdt):
+	for at,vdts in vdt_map.items():	
+		if vdt in vdts:
+			return at
+	
+	return "No AT"
+
+def write_ignored_sentence(title,sentence):
+	with open(IGNORED_SENTENCES_FILE + TIME_SUFFIX + ".txt", mode='a') as ignored_file:
+		ignored_file.write(title)
+		ignored_file.write(sentence)
+		ignored_file.write("#"*50)
+		ignored_file.write("\n")
+
+def write_one_row(vdt_map,vdt,sentence,start,end):
+	with open(AT_VDT_SENTENCE_START_END_FILENAME + TIME_SUFFIX + ".csv", mode='a') as final_csv:
 		writer = csv.writer(final_csv, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
-		for at,vdts in vdt_map.items():
-			for vdt in vdts:
-				for pagename,sentences in pagename_sentences.items():
-					if vdt == pagename:
-						for sentence in sentences:
-							row_items = []
-							row_items.append(at)
-							row_items.append(vdt)
-							row_items.append(sentence['sentence'])
-							row_items.append(sentence['start'])
-							row_items.append(sentence['end'])
-							writer.writerow(row_items)
+		at = find_at(vdt_map,vdt)
+		
+		row_items = []
+		row_items.append(at)
+		row_items.append(vdt)
+		row_items.append(sentence)
+		row_items.append(start)
+		row_items.append(end)
+		writer.writerow(row_items)
 
-def generate_at_vdt_sentence_start_end_csv(dumpfile="./dumps/trwiki-20190401-pages-articles-multistream.xml"):   
+def generate_at_vdt_sentence_start_end_csv(dumpfile="./dumps/trwiki-20190401-pages-articles-multistream.xml"):
 	vdt_map = get_vdt_map()
 
-	map_construction_start_time = time.time()
-	pagename_sentences = get_all_pagename_sentences_map(dumpfile)	
-	map_construction_end_time = time.time()
-	
 	start_time = time.time()
-	construct_final_csv(pagename_sentences,vdt_map)
+	TIME_SUFFIX = str(start_time.tm_mhour) + str(start_time.tm_min) + str(start_time.tm_min) + str(start_time.tm_mday) + str(start_time.tm_mon) + str(start_time.tm_year)
+	get_all_pagename_sentences(dumpfile,vdt_map)
 	end_time = time.time()
-
-	print("Pagename-Sentence map construction took: ", (map_construction_end_time - map_construction_start_time), " seconds.")
-	print("Final csv construction took: ", (end_time - start_time), " seconds.")
 	
+	print("Total execution took [", (end_time - start_time), "] seconds.")
