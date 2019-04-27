@@ -16,7 +16,7 @@ IGNORED_SENTENCES_FILE = "./output/ignored_sentences/ignored_sentences_"
 AT_VDT_SENTENCE_START_END_FILENAME = "./output/at_vdt_sentence_start_end_"
 DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
 
-BLACKLIST = ["{{","}}","\n","style=\""]
+BLACKLIST = ["{{","}}","\n","style=\"","YÖNLENDİR"]
 
 # This is just for debug.
 TOTAL_PAGE_COUNT = 909107
