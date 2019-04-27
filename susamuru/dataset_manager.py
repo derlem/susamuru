@@ -166,9 +166,10 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 								
 								# Increase total sentence count.	
 								valid_sentence_count +=1
-								write_one_row(vdt_map,text_map_['page_name'],normal_sentence,vdt_start_index,vdt_end_index)
+								write_one_row(percentage,vdt_map,text_map_['page_name'],normal_sentence,vdt_start_index,vdt_end_index)
 							except Exception as e:
-								write_ignored_sentence(page.title,normal_sentence)
+								pass
+								#write_ignored_sentence(page.title,normal_sentence)
 		print("% [", percentage, "] of pages processed. From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
 	print("Finished getting all sentences. (@_@)")
 	print("Total Sentence Count: ", total_sentence_count)
@@ -190,8 +191,17 @@ def write_ignored_sentence(title,sentence):
 		ignored_file.write("#"*50)
 		ignored_file.write("\n")
 
-def write_one_row(vdt_map,vdt,sentence,start,end):
-	with open(AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + ".csv", mode='a') as final_csv:
+def write_one_row(percentage,vdt_map,vdt,sentence,start,end):
+	
+	# Determine the filename to write the data.
+	# Distribute pages equally to 3 pieces
+	filename = AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + "_PART_1.csv"
+	if percentage > 33.3:
+		filename = AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + "_PART_2.csv"
+	elif percentage > 66.6:
+		filename = AT_VDT_SENTENCE_START_END_FILENAME + str(TIME_SUFFIX) + "_PART_3.csv"
+
+	with open(filename, mode='a') as final_csv:
 		writer = csv.writer(final_csv, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
 		at = find_at(vdt_map,vdt)
 		if at != None:
