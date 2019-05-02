@@ -273,19 +273,7 @@ def at_vdt_eth(limit=None):
     wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'w+')
     json.dump(wikidata_cache_dict, wikidata_cache_file)
     wikidata_cache_file.close()
-
-def get_referring_pages_and_texts(page):
-    refs = list(page.getReferences())
-    print("There are [ " + str(len(refs)) + " ] referring pages.")
-    print("Getting pages and texts...")
-    page_name_text_tuples = []
-    for ref in refs:
-        if not ref.isDisambig():
-            page_text = ref.text
-            page_text_tuple = (ref.title(),page_text)
-            page_name_text_tuples.append(page_text_tuple)
-    return page_name_text_tuples
-
+    
 # at_dtcs()
 # at_vdts()
 dataset_manager.generate_at_vdt_sentence_start_end_csv()

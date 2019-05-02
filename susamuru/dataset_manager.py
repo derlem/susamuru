@@ -8,6 +8,7 @@ import re
 import time
 import hashlib
 import os
+import gc
 
 DELIMITER = ","
 QUOTE_CHAR = '"'
@@ -171,6 +172,9 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 								pass
 								#write_ignored_sentence(page.title,normal_sentence)
 		print("% [", percentage, "] of pages processed. From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
+		# Collect garbage after 1 page.
+		gc.collect()
+	
 	print("Finished getting all sentences. (@_@)")
 	print("Total Sentence Count: ", total_sentence_count)
 	print("Ignored Sentence Count: ", ignored_sentence_count)
