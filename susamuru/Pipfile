@@ -16,7 +16,7 @@ mwparserfromhell = "*"
 fire = "*"
 lxml = "*"
 mwxml = "*"
-mem-top = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.6"

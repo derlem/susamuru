@@ -10,6 +10,8 @@ import hashlib
 import os
 import gc
 
+gc.set_debug(gc.DEBUG_LEAK)
+
 DELIMITER = ","
 QUOTE_CHAR = '"'
 AT_VDTS_FILENAME = "./dumps/at_vdts.csv"
@@ -171,7 +173,7 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 							except Exception as e:
 								pass
 								#write_ignored_sentence(page.title,normal_sentence)
-		print("% [", percentage, "] of pages processed. From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
+		#print("% [", percentage, "] of pages processed. From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
 		# Collect garbage after 1 page.
 		gc.collect()
 	
