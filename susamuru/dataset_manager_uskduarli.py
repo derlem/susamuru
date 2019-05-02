@@ -9,6 +9,7 @@ import csv
 import re
 import time
 import hashlib
+import gc
 
 import os
 import logging
@@ -133,7 +134,13 @@ def get_all_pagename_sentences(dumpfile, vdt_map):
         page_count += 1
         if iteration > 10000:
             print(iteration)
+            print("==================== Before Garbage Collection ====================")
             print(mem_top())
+
+            gc.collect()
+            print("==================== After Garbage Collection ====================")
+            print(mem_top())
+
             iteration = 0
 
         for revision in page:
