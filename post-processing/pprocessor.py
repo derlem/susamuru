@@ -6,8 +6,7 @@ QUOTE_CHAR = "\""
 
 BLACKLIST = ["REDIRECT","</ref>",""]
 
-if __name__ == '__main__':
-	main(sys.argv[1:])
+
 
 def is_useful_sentence(sentence):
 	for item in BLACKLIST:
@@ -44,11 +43,14 @@ def main(argv):
 	print('Output file is "', outputfile)
 	print("Starting to process the file...")
 
-    with open(inputfile, newline='') as csvfile:
-        reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
-        for row in reader:
-            is_useful = is_useful_sentence(row[2])
-            if is_useful:
-            	write_to_outputfile(row)
+	with open(inputfile) as csvfile:
+		reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
+		for row in reader:
+			is_useful = is_useful_sentence(row[2])
+			if is_useful:
+				write_to_outputfile(row)
 	print("Past processing is complete.")
 	print("Sentences that include ",BLACKLIST," have been deleted.")
+
+if __name__ == '__main__':
+	main(sys.argv[1:])
