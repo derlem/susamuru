@@ -1,18 +1,26 @@
 
-import sys
+import csv
+import datetime
 import json
 import os
 import pprint
 import re
-import csv
-import datetime
+import sys
 
 import mwparserfromhell
 import nltk
 import pywikibot
+from networkx import (DiGraph, all_simple_paths, draw, generate_graphml,
+                      relabel_nodes, similarity, spring_layout)
+from networkx.readwrite.graphml import read_graphml, write_graphml
+from pywikibot import pagegenerators
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from SPARQLWrapper import JSON, SPARQLWrapper
 
-import utils
 import dataset_manager
+import utils
 
 # Added to be able to read the large csv fields.
 maxInt = sys.maxsize
@@ -53,6 +61,7 @@ QUOTE_CHAR = '"'
 AT_DTCS_FILENAME = "./output/at_dtcs.csv"  
 AT_VDTS_FILENAME = "./output/at_vdts.csv"
 AT_VDT_ETH_FILENAME = "./output/at_vdt_eth.csv"
+AT_VDT_ETG_FILENAME = "./output/at_vdt_etg.csv"
 WIKIDATA_CACHE_FILENAME = "./dataset/wikidata_cache.json"
 
 
@@ -273,9 +282,60 @@ def at_vdt_eth(limit=None):
     wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'w+')
     json.dump(wikidata_cache_dict, wikidata_cache_file)
     wikidata_cache_file.close()
-    
+
+def get_etg(page):
+    etg = DiGraph()
+    if(page.isDisambig()):
+        return etg
+    try:
+        wd_page = pywikibot.ItemPage.fromPage(page)
+    except:
+        return etg
+    q_code = wd_page.title()
+    endpoint_url = "https://query.wikidata.org/sparql"
+    query_head = """#class
+    SELECT ?superclass ?superclass2 ?superclassLabel ?superclass2Label
+    WHERE 
+    {
+      wd:""" 
+    query_foot = """ wdt:P31 ?class.
+      ?class wdt:P279* ?superclass.
+      ?superclass wdt:P279 ?superclass2.
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+    }"""
+    q_code ="P31"
+    query = query_head + q_code + query_foot
+    sparql = SPARQLWrapper(endpoint_url)
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    results = sparql.query().convert()
+    for result in results["results"]["bindings"]:
+        first_node_label = result["superclassLabel"]["value"]
+        second_node_label = result["superclass2Label"]["value"]
+        first_node_q_code = result["superclass"]["value"].split("/")[-1]
+        second_node_q_code = result["superclass2"]["value"].split("/")[-1].split("/")[-1]
+        first_node = first_node_label + " : " + first_node_q_code
+        second_node = second_node_label + " : " + second_node_q_code
+        etg.add_edge(first_node, second_node)
+    return etg
+
+def at_vdt_etg(limit=None):
+    at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
+    with open(AT_VDT_ETG_FILENAME, mode='w') as at_vdt_eth_file:
+        etg_quote_char = "'"
+        writer = csv.writer(at_vdt_eth_file, delimiter=DELIMITER, quotechar=etg_quote_char, quoting=csv.QUOTE_MINIMAL)
+        for ambiguation_term_title,valid_disambiguation_terms in at_vdts_map.items():            
+            row_items = []
+            for vdt in valid_disambiguation_terms:
+                row_items.append(ambiguation_term_title)
+                row_items.append(vdt.title())
+                etg = get_etg(vdt)
+                etg_grapml = list(generate_graphml(etg, prettyprint=False))[0]
+                
+                row_items.append(etg_grapml)
+                writer.writerow(row_items)
+                row_items = []
 # at_dtcs()
 # at_vdts()
-dataset_manager.generate_at_vdt_sentence_start_end_csv()
+#dataset_manager.generate_at_vdt_sentence_start_end_csv()
 # at_vdt_eth(limit=LIMIT)
-
