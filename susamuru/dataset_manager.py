@@ -10,7 +10,7 @@ import hashlib
 import os
 import gc
 
-gc.set_debug(gc.DEBUG_LEAK)
+#gc.set_debug(gc.DEBUG_LEAK)
 
 DELIMITER = ","
 QUOTE_CHAR = '"'
