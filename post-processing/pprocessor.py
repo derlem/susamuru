@@ -4,7 +4,8 @@ import csv
 DELIMITER = ","
 QUOTE_CHAR = "\""
 
-BLACKLIST = ["REDIRECT","</ref>","<ref","<small>","</small>","<small"]
+BLACKLIST = ["Resim:","hatalı iç bağlantı dz.","|usage","REDIRECT","</ref>","<ref","<small>","</small>","<small","align=\"","https://","Kullanıcı mesaj:","[[","http://","rowspan=\"","<font color=\"","yönlendirme","]]"]
+TO_REMOVE = ["<div>","</div>","<nowiki>","</nowiki>"]
 def is_useful_sentence(sentence):
 	for item in BLACKLIST:
 		if item in sentence:
@@ -15,6 +16,12 @@ def write_to_outputfile(outputfile,items):
 	with open(outputfile, mode='a') as f:
 		writer = csv.writer(f, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
 		writer.writerow(items)
+
+def filter_sentence(sentence):
+	res = sentence    
+	for item in TO_REMOVE:
+		res = res.replace(item,"")
+	return res
 
 def main(argv):
 	inputfile = ''
@@ -52,12 +59,16 @@ def main(argv):
 			total_count += 1
 			is_useful = is_useful_sentence(row[2])
 			if is_useful:
+				filtered_sentence = filter_sentence(row[2])
+				row[2] = filtered_sentence
 				write_to_outputfile(outputfile,row)
 			else:
 				deleted_count += 1
 	
 	print("Past processing is complete.\n")
-	print("Sentences that include ",BLACKLIST," have been deleted.")
+	print("Sentences that include: ",BLACKLIST," have been deleted.")
+	print("Words: ",TO_REMOVE," have been removed from the sentences.")
+
 	print(deleted_count, " Sentences deleted.")
 	print(total_count - deleted_count, " Sentences remained.")
 if __name__ == '__main__':
