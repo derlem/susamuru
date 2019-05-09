@@ -303,7 +303,6 @@ def get_etg(page):
       ?superclass wdt:P279 ?superclass2.
       SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
     }"""
-    q_code ="P31"
     query = query_head + q_code + query_foot
     sparql = SPARQLWrapper(endpoint_url)
     sparql.setQuery(query)
