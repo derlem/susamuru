@@ -303,7 +303,6 @@ def get_etg(page):
       ?superclass wdt:P279 ?superclass2.
       SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
     }"""
-    q_code ="P31"
     query = query_head + q_code + query_foot
     sparql = SPARQLWrapper(endpoint_url)
     sparql.setQuery(query)
@@ -324,6 +323,10 @@ def at_vdt_etg(limit=None):
     with open(AT_VDT_ETG_FILENAME, mode='w') as at_vdt_eth_file:
         etg_quote_char = "'"
         writer = csv.writer(at_vdt_eth_file, delimiter=DELIMITER, quotechar=etg_quote_char, quoting=csv.QUOTE_MINIMAL)
+        at_vdts_size = len(at_vdts_map)
+        percentage = 0
+        page_count = 0
+        init_datetime = datetime.datetime.now()
         for ambiguation_term_title,valid_disambiguation_terms in at_vdts_map.items():            
             row_items = []
             for vdt in valid_disambiguation_terms:
@@ -335,6 +338,15 @@ def at_vdt_etg(limit=None):
                 row_items.append(etg_grapml)
                 writer.writerow(row_items)
                 row_items = []
+            page_count += 1
+            percentage = (page_count*100.0)/at_vdts_size
+            curr_time = datetime.datetime.now()
+            date_time = curr_time - init_datetime
+            print(date_time)
+            print("% [", percentage, "] of pages processed.", " ", date_time, " has passed.")
+            etc = (date_time/percentage) * (100-percentage)
+            print(" ETC: ", etc)
+
 # at_dtcs()
 # at_vdts()
 #dataset_manager.generate_at_vdt_sentence_start_end_csv()
