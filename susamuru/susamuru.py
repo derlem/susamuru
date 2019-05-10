@@ -12,7 +12,7 @@ import nltk
 import pywikibot
 from networkx import (DiGraph, all_simple_paths, draw, generate_graphml,
                       relabel_nodes, similarity, spring_layout)
-from networkx.readwrite.graphml import read_graphml, write_graphml
+from networkx.readwrite.graphml import read_graphml, write_graphml, parse_graphml
 from pywikibot import pagegenerators
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,6 +56,7 @@ SUBCLASS_PROPERTY_CODE = "P279"
 # In case it didn't work, put tab character
 DELIMITER = ","
 QUOTE_CHAR = '"'
+ETG_QUOTE_CHAR = "'"
 
 # All Ambiguous Terms and their all disambiguation term candidates are found in this file
 AT_DTCS_FILENAME = "./output/at_dtcs.csv"  
@@ -63,7 +64,8 @@ AT_VDTS_FILENAME = "./output/at_vdts.csv"
 AT_VDT_ETH_FILENAME = "./output/at_vdt_eth.csv"
 AT_VDT_ETG_FILENAME = "./output/at_vdt_etg.csv"
 WIKIDATA_CACHE_FILENAME = "./dataset/wikidata_cache.json"
-
+TAG_LIST = ['person : Q215627', 'organization : Q43229', 'location : Q17334923']
+AT_VDT_TAG_FILE_NAME = "./output/at_vdt_tag.csv"
 
 
 def get_ambiguous_term_generator():
@@ -321,8 +323,7 @@ def get_etg(page):
 def at_vdt_etg(limit=None):
     at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
     with open(AT_VDT_ETG_FILENAME, mode='w') as at_vdt_eth_file:
-        etg_quote_char = "'"
-        writer = csv.writer(at_vdt_eth_file, delimiter=DELIMITER, quotechar=etg_quote_char, quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(at_vdt_eth_file, delimiter=DELIMITER, quotechar=ETG_QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
         at_vdts_size = len(at_vdts_map)
         percentage = 0
         page_count = 0
@@ -346,6 +347,34 @@ def at_vdt_etg(limit=None):
             print("% [", percentage, "] of pages processed.", " ", date_time, " has passed.")
             etc = (date_time/percentage) * (100-percentage)
             print(" ETC: ", etc)
+
+def graph_to_tag(row):
+    etg = parse_graphml(row["GRAPHML"])
+    etg_node_list = list(etg.nodes)
+    current_tags = []
+    for tag in TAG_LIST:
+        if tag in etg_node_list:
+            current_tags.append(tag)
+    if not etg_node_list:
+        row["GRAPHML"] = "UNK1"
+    elif len(current_tags) == 0:
+        row["GRAPHML"] = "UNK2"
+    elif len(current_tags) == 1:
+        row["GRAPHML"] = current_tags[0].split(":")[0][:3].upper()
+    else:
+        combined_tag = ""
+        for tag in current_tags:
+            combined_tag += tag.split(":")[0][:3].upper()
+        combined_tag = combined_tag
+        row["GRAPHML"] = combined_tag
+    return row
+
+def at_vdt_tag():
+    at_vdt_etg_table = pd.read_csv(AT_VDT_ETG_FILENAME, quotechar=ETG_QUOTE_CHAR, header=None)
+    at_vdt_etg_table.columns= ["AT", "VDT", "GRAPHML"]
+    at_vdt_etg_table.apply(graph_to_tag, axis=1)
+    at_vdt_etg_table.columns = ["AT", "VDT", "TAG"]
+    at_vdt_etg_table.to_csv(AT_VDT_TAG_FILE_NAME, header=False, index=False)
 
 # at_dtcs()
 # at_vdts()
