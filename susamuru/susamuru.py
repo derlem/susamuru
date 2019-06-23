@@ -209,7 +209,7 @@ def at_dtcs(limit=None):
 def construct_at_dt_map_from_file(filename):
     at_dt_map = {}
     with open(filename, newline='') as csvfile:
-        reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
+        reader = csv.reader(csvfile,delimiter=Common.DELIMITER,quotechar=Common.QUOTE_CHAR)
         for row in reader:
             # Put the pages into the map.
             pages = [pywikibot.Page(SITE,page_name) for page_name in row[1:]]
@@ -225,13 +225,19 @@ def get_valid_candidates(ambiguation_term_title,candidates):
 
 def at_vdts(limit=None):
     print("\nStarting 2nd Step...")
-    at_dtcs_map = construct_at_dt_map_from_file(AT_DTCS_FILENAME)
+    at_dtcs_filename = os.path.join(Common.OUTPUT_FOLDER,Common.AT_DTCS_FILENAME) + Common.CSV_SUFFIX
+    at_dtcs_map = construct_at_dt_map_from_file(at_dtcs_filename)
 
-    with open(AT_VDTS_FILENAME, mode='w') as at_vdts_file:
-        writer = csv.writer(at_vdts_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
+    filename = os.path.join(Common.OUTPUT_FOLDER, Common.AT_VDTS_FILENAME)
+    filename += Common.CSV_SUFFIX
 
+    with open(filename, mode='w') as at_vdts_file:
+        writer = csv.writer(at_vdts_file, delimiter=Common.DELIMITER,quotechar=Common.QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
+
+        length = len(at_dtcs_map.keys())
+        count = 0
         for ambiguation_term,candidates in at_dtcs_map.items():
-            ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), DISAMBIGUATION_REFERENCE)
+            ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), Common.DISAMBIGUATION_REFERENCE)
             valid_candidates = get_valid_candidates(ambiguation_term_title,candidates)
             valid_candidate_titles = [vc.title() for vc in valid_candidates]
 
@@ -240,6 +246,8 @@ def at_vdts(limit=None):
             row_items = valid_candidate_titles
             row_items.insert(0, ambiguation_term_title)
             writer.writerow(row_items)
+            count += 1
+            if Common.VERBOSE: print("% [ "+ str(count*100.0/length) +" ] done.")
     print("2nd Step is complete. [ at_vdts.csv is ready ].\n")
 
 # This method gets the entity type hierarchy for each (at,vdt) pair.
