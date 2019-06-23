@@ -1,8 +1,38 @@
-# Filenames
-at_vdt_sentence_start_end_filename = "sentences_04-24_18-29-49_processed.csv"
-at_vdt_tag_filename = "at_vdt_tag.csv"
-delimiter = ","
-quote_char = "\""
+# This file contains the shared variables/constants. 
+
+# ======== WIKIBOT CONFIGS ========
+LANGUAGE = "tr" # Global language config
+FAMILY = "wikipedia" # Don't change it unless necessary 
+
+# FOLDERS
+OUTPUT_FOLDER = "./output"
+DUMP_FOLDER = "./dumps"
+CSV_SUFFIX = ".csv"
+
+# FILES
+AT_VDT_SENTENCE_FILENAME = "at_vdt_sentence"
+AT_DTCS_FILENAME = "at_dtcs"
+AT_VDTS_FILENAME = "at_vdts"
+AT_VDT_ETH_FILENAME = "at_vdt_eth"
+AT_VDT_ETG_FILENAME = "at_vdt_etg"
+AT_VDT_TAG_FILENAME = "at_vdt_tag"
+WIKIDATA_CACHE_FILENAME = "wikidata_cache.json"
+
+# ==== ENTITY TYPE GRAPH CONFIGS ====
+TAG_LIST = ['person : Q215627', 'organization : Q43229', 'location : Q17334923']
+
+
+# CSV WRITER
+DELIMITER = ","
+QUOTE_CHAR = '"'
+ETG_QUOTE_CHAR = "'"
+
+# ========== CONFIG ==========
+A_START_INDEX = 160
+DEBUG = False
+LIMIT = 100
+DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
+VERBOSE = True
 
 # Final Data
 final_filename = "output"

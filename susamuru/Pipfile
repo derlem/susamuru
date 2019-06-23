@@ -25,6 +25,8 @@ pandas = "*"
 "html5lib" = "*"
 "beautifulsoup4" = "*"
 sparqlwrapper = "*"
+tkinter = "*"
+python3-tk = "*"
 
 [requires]
 python_version = "3.6"

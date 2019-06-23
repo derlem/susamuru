@@ -14,14 +14,19 @@ from networkx import (DiGraph, all_simple_paths, draw, generate_graphml,
                       relabel_nodes, similarity, spring_layout)
 from networkx.readwrite.graphml import read_graphml, write_graphml, parse_graphml
 from pywikibot import pagegenerators
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from SPARQLWrapper import JSON, SPARQLWrapper
 
 import dataset_manager
 import utils
+import Common
 
+nltk.download('punkt')
+
+
+# ================= CSV =======================
 # Added to be able to read the large csv fields.
 maxInt = sys.maxsize
 while True:
@@ -33,39 +38,22 @@ while True:
     except OverflowError:
         maxInt = int(maxInt/10)
 
+# =============================================
 
-nltk.download('punkt')
+SITE = pywikibot.Site(Common.LANGUAGE, Common.FAMILY)
 
-LIMIT = 1
-A_START_INDEX = 160
-
-'''
-print("You should set CODE accordingly default is 'tr' for Turkish")
-print("You should set FAMILY accordingly default is 'wikipedia' for wikipedia")
-print("You should set DISAMBIGUATION accordingly default is '(anlam ayrımı)'")
-print()
-'''
-
-CODE = "tr"
-FAMILY = "wikipedia"
-SITE = pywikibot.Site(CODE, FAMILY)
-DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
 INSTANCE_OF_PROPERTY_CODE = "P31"
 SUBCLASS_PROPERTY_CODE = "P279"
 
-# In case it didn't work, put tab character
-DELIMITER = ","
-QUOTE_CHAR = '"'
-ETG_QUOTE_CHAR = "'"
 
 # All Ambiguous Terms and their all disambiguation term candidates are found in this file
+'''
 AT_DTCS_FILENAME = "./output/at_dtcs.csv"  
 AT_VDTS_FILENAME = "./output/at_vdts.csv"
 AT_VDT_ETH_FILENAME = "./output/at_vdt_eth.csv"
 AT_VDT_ETG_FILENAME = "./output/at_vdt_etg.csv"
 WIKIDATA_CACHE_FILENAME = "./dataset/wikidata_cache.json"
-TAG_LIST = ['person : Q215627', 'organization : Q43229', 'location : Q17334923']
-AT_VDT_TAG_FILE_NAME = "./output/at_vdt_tag.csv"
+'''
 
 
 def get_ambiguous_term_generator():
@@ -77,7 +65,7 @@ def get_ambiguous_terms(limit=None):
 
     # Convert to list 
     generator = list(generator)
-    generator = generator[A_START_INDEX:]
+    generator = generator[Common.A_START_INDEX:]
     pages = []
     for page in generator:
         pages.append(page)
@@ -193,21 +181,28 @@ def at_dtcs(limit=None):
     print("\nStarting 1st Step...")
     ambiguous_terms = get_ambiguous_terms(limit)
 
-    with open(AT_DTCS_FILENAME, mode='w') as at_dtcs_file:
-        writer = csv.writer(at_dtcs_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
+    filename = os.path.join(Common.OUTPUT_FOLDER,Common.AT_DTCS_FILENAME)
+    filename += Common.CSV_SUFFIX
+
+    with open(filename, mode='w') as at_dtcs_file:
+        writer = csv.writer(at_dtcs_file, delimiter=Common.DELIMITER,quotechar=Common.QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
         
+        length = len(ambiguous_terms)
+        count = 0
         for ambiguation_term in ambiguous_terms:
             candidates = [disamb_candidate for disamb_candidate in ambiguation_term.linkedPages()]
             disamb_candidate_titles = [candidate.title() for candidate in candidates]
             
             # Strip "anlam ayrımı" from ambiguation page title.
-            ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), DISAMBIGUATION_REFERENCE)
+            ambiguation_term_title = utils.strip_disambiguation_reference(ambiguation_term.title(), Common.DISAMBIGUATION_REFERENCE)
 
             # Items that are going to be printed.
             row_items = []
             row_items = disamb_candidate_titles
             row_items.insert(0,ambiguation_term_title)
             writer.writerow(row_items)
+            count +=1
+            if Common.VERBOSE: print("% [ "+ str(count*100.0/length) +" ] done.")
     print("1st Step is complete [ at_dcts.csv is ready ]\n")
 
 # This method constructs the at_dtcs map from the at_dtcs.csv file.
@@ -352,7 +347,7 @@ def graph_to_tag(row):
     etg = parse_graphml(row["GRAPHML"])
     etg_node_list = list(etg.nodes)
     current_tags = []
-    for tag in TAG_LIST:
+    for tag in Common.TAG_LIST:
         if tag in etg_node_list:
             current_tags.append(tag)
     if not etg_node_list:

@@ -1,2 +1,4 @@
-mylang = "tr"
-family = "wikipedia"
+import Common
+
+mylang = Common.LANGUAGE
+family = Common.FAMILY
