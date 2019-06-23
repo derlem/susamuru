@@ -10,6 +10,13 @@ def get_word_location(words,sub_word):
             return i
     return -1
 
+def is_all_o(tags):
+    for tag in tags:
+        if tag != Common.CoNNL_O:
+            return False
+    return True
+
+
 def tag_sentence(sentence,vdt_index_map):
     words = sentence.split(" ")
     tags = ["O" for i in words]
@@ -31,7 +38,7 @@ def tag_sentence(sentence,vdt_index_map):
     res = [words,tags]
     
     # Return the transposed version
-    return [[x[0],"-","-","-","-","-","-","-","-",x[1]] for x in zip(*res)]
+    return is_all_o(tags),[[x[0],"-","-","-","-","-","-","-","-",x[1]] for x in zip(*res)]
 
 def join():
     print("Starting to join the sentences")
@@ -45,6 +52,7 @@ def join():
         is_first = True
         vdt_start_end_map = {}
         count = 0
+        printed_sentence_count = 0
         for row in reader:
             
             percentage = count*100.0/Common.total_sentence_count
@@ -57,8 +65,15 @@ def join():
 
             if ((prev_sentence != sentence) and (not is_first)):
                 # Get the words in the sentence.
-                sentence_rows = tag_sentence(prev_sentence, vdt_start_end_map)
-                write_to_final_file(sentence_rows)
+                is_all_o_in_sentence,sentence_rows = tag_sentence(prev_sentence, vdt_start_end_map)
+                if is_all_o_in_sentence:
+                    if Common.write_no_tag_sentences:
+                        write_to_final_file(sentence_rows)
+                        printed_sentence_count+=1
+                else:
+                    write_to_final_file(sentence_rows)
+                    printed_sentence_count+=1
+
                 vdt_start_end_map = {} 
             
             is_first = False
@@ -67,6 +82,7 @@ def join():
             prev_sentence = sentence
 
             count+=1
+    print(printed_sentence_count, " sentences have been written.")
 
 
 def write_to_final_file(sentence_rows):

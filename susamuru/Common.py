@@ -19,3 +19,6 @@ unknown_tags =["UNK1","UNK2"]
 
 # Sentences
 total_sentence_count = 366321
+
+# Flags
+write_no_tag_sentences = False
