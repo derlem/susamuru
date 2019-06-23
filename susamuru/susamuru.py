@@ -250,44 +250,6 @@ def at_vdts(limit=None):
             if Common.VERBOSE: print("% [ "+ str(count*100.0/length) +" ] done.")
     print("2nd Step is complete. [ at_vdts.csv is ready ].\n")
 
-# This method gets the entity type hierarchy for each (at,vdt) pair.
-# (AT,VDT,[ET1,ET2,ET3,ET4..])
-# This works but takes a long time, querying wikidata takes a lot of time.
-# We can maybe first flatten all the disambiguate terms and then query wikidata 
-# and save it to a file for future usage.
-def at_vdt_eth(limit=None):
-    at_vdts_map = construct_at_dt_map_from_file(AT_VDTS_FILENAME)
-    if not os.path.isfile(WIKIDATA_CACHE_FILENAME):
-        wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'w+')
-        wikidata_cache_dict = {}
-        wikidata_cache_file.close()
-    else:
-        wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'r')
-        wikidata_cache_dict = json.load(wikidata_cache_file)
-        wikidata_cache_file.close()
-    with open(AT_VDT_ETH_FILENAME, mode='w') as at_vdt_eth_file:
-        writer = csv.writer(at_vdt_eth_file, delimiter=DELIMITER,quotechar=QUOTE_CHAR, quoting=csv.QUOTE_MINIMAL)
-        for ambiguation_term_title,valid_disambiguation_terms in at_vdts_map.items():            
-            row_items = []
-            for vdt in valid_disambiguation_terms:
-                row_items.append(ambiguation_term_title)
-                row_items.append(vdt.title())
-                eth = extract_class_path(vdt, cache=wikidata_cache_dict)
-                # TODO: Some of the vdt's doesn't have a page in wikidata.
-                if eth is not None:
-                    # Write Cache
-                    for i in range(len(eth)):
-                        if eth[i] not in wikidata_cache_dict:
-                            wikidata_cache_dict[eth[i]] = eth[i+1:]
-                    for et in eth:
-                        row_items.append(et)
-                    writer.writerow(row_items)
-                row_items = []
-    
-    wikidata_cache_file = open(WIKIDATA_CACHE_FILENAME, 'w+')
-    json.dump(wikidata_cache_dict, wikidata_cache_file)
-    wikidata_cache_file.close()
-
 def get_etg(page):
     etg = DiGraph()
     if(page.isDisambig()):
@@ -379,7 +341,4 @@ def at_vdt_tag():
     at_vdt_etg_table.columns = ["AT", "VDT", "TAG"]
     at_vdt_etg_table.to_csv(AT_VDT_TAG_FILE_NAME, header=False, index=False)
 
-# at_dtcs()
-# at_vdts()
-#dataset_manager.generate_at_vdt_sentence_start_end_csv()
 # at_vdt_eth(limit=LIMIT)

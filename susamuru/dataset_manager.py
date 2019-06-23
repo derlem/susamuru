@@ -10,7 +10,7 @@ import hashlib
 import os
 import gc
 
-#gc.set_debug(gc.DEBUG_LEAK)
+import Common
 
 DELIMITER = ","
 QUOTE_CHAR = '"'
@@ -19,10 +19,8 @@ IGNORED_SENTENCES_FILE = "./output/ignored_sentences/ignored_sentences_"
 AT_VDT_SENTENCE_START_END_FILENAME = "./output/at_vdt_sentence_start_end_"
 DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
 
-BLACKLIST = ["{{","}}","\n","style=\"","YÖNLENDİR","[[Dosya:"]
 
 # This is just for debug.
-TOTAL_PAGE_COUNT = 909107
 TIME_SUFFIX = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
 def print_dict(map):
@@ -39,8 +37,9 @@ def get_vdt_map():
 	print("Starting to construct AT -> [VDT,VDT,VDT] map.")
 	at_vdt_map = {}
 
-	with open(AT_VDTS_FILENAME, newline='') as csvfile:
-		reader = csv.reader(csvfile,delimiter=DELIMITER,quotechar=QUOTE_CHAR)
+	filename = os.path.join(Common.OUTPUT_FOLDER,Common.AT_VDTS_FILENAME) + Common.CSV_SUFFIX
+	with open(filename, newline='') as csvfile:
+		reader = csv.reader(csvfile,delimiter=Common.DELIMITER,quotechar=Common.QUOTE_CHAR)
 		for row in reader:
 			pages = row[1:]
 			at_vdt_map[row[0]] = pages
@@ -95,7 +94,7 @@ def replace_hash_values_with_seen_text(sentence, hashmap):
 	return normal_sentence
 
 def is_valid_sentence(sentence):
-	for item in BLACKLIST:
+	for item in Common.BLACKLIST:
 		if item in sentence:
 			return False
 	return True
@@ -112,12 +111,12 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 	for page in dump:
 
 		# Ignore disambiguation pages.
-		if DISAMBIGUATION_REFERENCE in page.title:
+		if Common.DISAMBIGUATION_REFERENCE in page.title:
 			continue
 
-		percentage = (page_count*100.0)/TOTAL_PAGE_COUNT
+		percentage = (page_count*100.0)/Common.TOTAL_PAGE_COUNT
 		page_links_hashes = {}
-		page_count+=1
+		page_count += 1
 
 		for revision in page:
 			link_regex = r'(\[\[([a-zA-Z\u0080-\uFFFF ()]+)\]\]|\[\[([a-zA-Z\u0080-\uFFFF ()]+)\|([a-zA-Z\u0080-\uFFFF ]+)\]\])'
@@ -172,8 +171,7 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 								write_one_row(percentage,vdt_map,text_map_['page_name'],normal_sentence,vdt_start_index,vdt_end_index)
 							except Exception as e:
 								pass
-								#write_ignored_sentence(page.title,normal_sentence)
-		#print("% [", percentage, "] of pages processed. From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
+		# print("% [", percentage, "] of pages processed. From page: [", page.title, "] Found: [", len(page_links_hashes), "] pagelinks.")	
 		# Collect garbage after 1 page.
 		gc.collect()
 	
@@ -181,21 +179,13 @@ def get_all_pagename_sentences(dumpfile,vdt_map):
 	print("Total Sentence Count: ", total_sentence_count)
 	print("Ignored Sentence Count: ", ignored_sentence_count)
 	print("Valid Sentence Count: ", valid_sentence_count)
-	print("Valid/Total Ratio: ", (valid_sentence_count*100.0)/total_sentence_count)
+	print("Valid/Total Ratio: ", (valid_sentence_count * 100.0)/total_sentence_count)
 
 def find_at(vdt_map,vdt):
 	for at,vdts in vdt_map.items():	
 		if vdt in vdts:
 			return at
 	return None
-
-def write_ignored_sentence(title,sentence):
-	with open(IGNORED_SENTENCES_FILE + str(TIME_SUFFIX) + ".txt", mode='a') as ignored_file:
-		ignored_file.write(title)
-		ignored_file.write(sentence)
-		ignored_file.write("\n")
-		ignored_file.write("#"*50)
-		ignored_file.write("\n")
 
 def write_one_row(percentage,vdt_map,vdt,sentence,start,end):
 	
@@ -219,7 +209,7 @@ def write_one_row(percentage,vdt_map,vdt,sentence,start,end):
 			row_items.append(end)
 			writer.writerow(row_items)
 
-def generate_at_vdt_sentence_start_end_csv(dumpfile="./dumps/trwiki-20190401-pages-articles-multistream.xml"):
+def generate_at_vdt_sentence_start_end_csv(Common.DUMPFILE):
 	vdt_map = get_vdt_map()
 
 	start_time = time.time()

@@ -33,6 +33,9 @@ DEBUG = False
 LIMIT = 100
 DISAMBIGUATION_REFERENCE = "(anlam ayrımı)"
 VERBOSE = True
+DUMPFILE = "./dumps/trwiki-20190401-pages-articles-multistream.xml"
+BLACKLIST = ["{{","}}","\n","style=\"","YÖNLENDİR","[[Dosya:"]
+TOTAL_PAGE_COUNT = 909107
 
 # Final Data
 final_filename = "output"
