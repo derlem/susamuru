@@ -1,5 +1,7 @@
-# susamuru
-Our goal is to curate a NER dataset for morphologically challenging languages using Wikipedia. 
+# Automated Generation of Dataset for Named Entity Recognition Task
+
+This project generates a NER dataset using Wikipedia and Wikidata. 
+It was developed especially for morphologically challenging and low resource language.
 
 ## tools (all of these are subject to change)
 * python 3.6
