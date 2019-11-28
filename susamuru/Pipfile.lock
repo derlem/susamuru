@@ -51,7 +51,6 @@
                 "sha256:017c25db2a153ce562900032d5bc68e9f191e44e9a0f762f373977de9df1fbb3",
                 "sha256:25b64c7da4cd7479594d035c08c2d809eb4aab3a26e5a990ea98cc450c320f1f"
             ],
-            "index": "pypi",
             "version": "==2019.11.28"
         },
         "chardet": {
@@ -465,10 +464,11 @@
         },
         "prompt-toolkit": {
             "hashes": [
-                "sha256:3f1e4acc78605c25f79992c2e5b3fe9a1c238a6444ae3f4b7d2678cfbd67a8f8",
-                "sha256:cf1fc1500e9818973c4f92b6015bece88253f0aa599dd61d3fd375c5205cecbb"
+                "sha256:456d2dca807ab39aef29be7a4e95fd20ae1e6765f077d0546a6ea82ebc4fd2d6",
+                "sha256:d612e4602756af01327b546bbb64ec0bcf08308beb8241b8fc6d2fb76ed91dce"
             ],
-            "version": "==3.0.0"
+            "index": "pypi",
+            "version": "==3.0.1"
         },
         "ptyprocess": {
             "hashes": [
