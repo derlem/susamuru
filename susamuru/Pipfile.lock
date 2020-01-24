@@ -482,6 +482,12 @@
             ],
             "version": "==0.4"
         },
+        "pycparser": {
+            "hashes": [
+                "sha256:a988718abfad80b6b157acce7bf130a30876d27603738ac39f140993246b25b3"
+            ],
+            "version": "==2.19"
+        },
         "pygments": {
             "hashes": [
                 "sha256:2a3fe295e54a20164a9df49c75fa58526d3be48e14aceba6d6b1e8ac0bfd6f1b",
@@ -526,10 +532,10 @@
         },
         "pywikibot": {
             "hashes": [
-                "sha256:a0388717038293202ea92eeb7099e8bd87f258304f371a8a8f87a74e233e9cd4"
+                "sha256:55cffa9133df0ffa6f30cedbdff34d76f61c314bf51e2b0f67755ec4da8d4c84"
             ],
             "index": "pypi",
-            "version": "==3.0.20190722"
+            "version": "==3.0.20200111"
         },
         "pyzmq": {
             "hashes": [
