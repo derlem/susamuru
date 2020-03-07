@@ -524,10 +524,10 @@
         },
         "pywikibot": {
             "hashes": [
-                "sha256:55cffa9133df0ffa6f30cedbdff34d76f61c314bf51e2b0f67755ec4da8d4c84"
+                "sha256:ec112499257ea333c04bebfe6535405e6b92eaaa05987ee73a801733063e0176"
             ],
             "index": "pypi",
-            "version": "==3.0.20200111"
+            "version": "==3.0.20200306"
         },
         "pyzmq": {
             "hashes": [
