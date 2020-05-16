@@ -162,10 +162,11 @@
         },
         "joblib": {
             "hashes": [
-                "sha256:0630eea4f5664c463f23fbf5dcfc54a2bc6168902719fa8e19daf033022786c8",
-                "sha256:bdb4fd9b72915ffb49fde2229ce482dd7ae79d842ed8c2b4c932441495af1403"
+                "sha256:a55f5268c5e402e4a892202089ebda1730db81e82f704d2bee8a6bc499ebc264",
+                "sha256:f8f84dcef519233be4ede1c64fd1f2d48b1e8bbb632d1013ebca75f8b678ee72"
             ],
-            "version": "==0.14.1"
+            "index": "pypi",
+            "version": "==0.15.0"
         },
         "jsonable": {
             "hashes": [
@@ -580,7 +581,6 @@
                 "sha256:e565569fc28e3ba3e475ec344d87ed3cd8ba2d575335359749298a0899fe122e",
                 "sha256:ea55b80eb0d1c3f1d8d784264a6764f931e172480a2f1868f2536444c5f01e01"
             ],
-            "index": "pypi",
             "version": "==2020.5.14"
         },
         "requests": {
